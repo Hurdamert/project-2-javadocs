@@ -23,6 +23,9 @@ int main(int argc, char* argv[]){
     addOns << 3 << ",Ice Cream," << 0.5 << "," << 0 << "\n";
     addOns << 4 << ",Coffee Jelly," << 0.6 << "," << 0 << "\n";
     addOns << 5 << ",Crystal Boba," << 0.5 << "," << 0 << "\n";
+
+    //add categories
+    categories << 0 << ",Drinks" << "\n";
     
     addOns.close();
     categories.close();
