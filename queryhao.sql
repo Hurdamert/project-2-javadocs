@@ -14,3 +14,4 @@ SELECT * FROM ProductIngredients;
 
 SELECT * FROM categories;
 
+-- Special Query #1: "Weekly Sales History"
