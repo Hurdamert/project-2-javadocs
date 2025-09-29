@@ -44,7 +44,26 @@ string incrementDateTime(int& year, int& month, int& day){
         }
         
     }
-    return to_string(year) + "-" + to_string(month) + "-" + to_string(day);
+
+    //zero pad month
+    string zeroPaddedMonth = "";
+    if(month == 10 || month == 11 || month == 12){
+        zeroPaddedMonth = to_string(month);
+    }
+    else{
+        zeroPaddedMonth = "0" + to_string(month);
+    }
+
+    //zero pad day
+    string zeroPaddedDay = "";
+    if(day < 10){
+        zeroPaddedDay = "0" + to_string(day);
+    }
+    else{
+        zeroPaddedDay = to_string(day);
+    }
+
+    return to_string(year) + "-" + zeroPaddedMonth + "-" + zeroPaddedDay;
 }
 
 int main(int argc, char* argv[]){
@@ -94,7 +113,7 @@ int main(int argc, char* argv[]){
     int year = 2024;
     int month = 7;
     int day = 1;
-    string timestamp = to_string(year) + "-" + to_string(month) + "-" + to_string(day);
+    string timestamp = to_string(year) + "-" + "0" + to_string(month) + "-" + "0" + to_string(day);
 
     //add headers to csv
     string ordersHeader = "employee_id,sub_total,date_time";
@@ -122,11 +141,26 @@ int main(int argc, char* argv[]){
         for(int j = 0; j < 7; j++){
             dayTotal = 0;
 
-            while(dayTotal < normalDaysLimit){
+            int currentLimit;
+
+            if(month == 12 && day == 25 && year == 2024){
+                currentLimit = peakDaysLimit;
+            }
+            else if(month == 8 && day == 21 && year == 2024){
+                currentLimit = peakDaysLimit;
+            }
+            else if(month == 11 && day == 27 && year == 2024){
+                currentLimit = peakDaysLimit;
+            }
+            else{
+                currentLimit = normalDaysLimit;
+            }
+
+            while(dayTotal < currentLimit){
                 //randomly choose between 1-3 drinks and 1-2 quantity per order
                 subTotal = 0;
                 int numDrinks = (gen() % 3) + 1;
-                int itemQuantity = (gen() % 2) + 1;
+                itemQuantity = (gen() % 2) + 1;
 
                 for(int k = 0; k < numDrinks; k++){
                     //choose random drink and add price to subTotal
