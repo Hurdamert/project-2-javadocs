@@ -1,0 +1,5 @@
+`all products with a price less than $6`
+SELECT * FROM products WHERE price < 6;
+
+'all ingredients with less than 5000 quantity'
+SELECT * FROM ingredients WHERE quantity < 5000;
