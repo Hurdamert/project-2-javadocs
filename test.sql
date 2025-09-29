@@ -1,4 +1,2 @@
-CREATE TABLE testTable (
-    product_name VARCHAR(255),
-    price INT
-);
+INSERT INTO addons (addon_id,addon_name,price_delta,category_id,is_available)
+VALUES ('Ice', 3, 1, true);
