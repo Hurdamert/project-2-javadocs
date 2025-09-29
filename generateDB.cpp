@@ -25,7 +25,10 @@ int main(int argc, char* argv[]){
     addOns << 5 << ",Crystal Boba," << 0.5 << "," << 0 << "\n";
 
     //add categories
-    categories << 0 << ",Drinks" << "\n";
+    categories << 1 << ",Milky Series" << "\n";
+    categories << 2 << ",Fresh Milk" << "\n";
+    categories << 3 << ",Fruit Drinks" << "\n";
+    categories << 1 << ",Non-Caffeinated" << "\n";
     
     addOns.close();
     categories.close();
