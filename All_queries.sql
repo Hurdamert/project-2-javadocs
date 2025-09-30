@@ -1,19 +1,18 @@
 -- Q1: Categories (POS tabs)
 SELECT category_id, category_name
 FROM categories
-WHERE active = TRUE
 ORDER BY category_name;
 
 -- Q2: Products in a category (example: 1)
 SELECT product_id, product_name, product_price
 FROM products
-WHERE category_id = 1 AND active = TRUE
+WHERE category_id = 1
 ORDER BY product_name;
 
 -- Q3: Add-ons for a category (example: 1)
 SELECT addon_id, addon_name, price_delta
 FROM addons
-WHERE category_id = 1 AND is_available = TRUE
+WHERE category_id = 1
 ORDER BY addon_name;
 
 -- Special query Q4: Weekly Sales History 
@@ -23,6 +22,10 @@ SELECT date_part('isoyear', order_ts)::int AS iso_year,
 FROM orders
 GROUP BY 1,2
 ORDER BY 1,2;
+--OR
+-- SELECT EXTRACT(YEAR FROM date_time) AS year_num, EXTRACT(WEEK FROM date_time) AS week_num, COUNT(order_id) AS total_orders FROM Orders
+-- GROUP BY year_num, week_num
+-- ORDER BY year_num, week_num;
 
 -- Special query Q5: Realistic Sales History (by hour)
 SELECT to_char(order_ts, 'HH24') AS hour_of_day,
@@ -31,6 +34,11 @@ SELECT to_char(order_ts, 'HH24') AS hour_of_day,
 FROM orders
 GROUP BY 1
 ORDER BY 1;
+--OR
+-- SELECT EXTRACT(HOUR FROM date_time) AS hour_of_day, COUNT(order_id) AS total_orders, SUM(sub_total) AS total_sales FROM Orders
+-- GROUP BY hour_of_day
+-- ORDER BY hour_of_day;
+
 
 -- Special query Q6: Top Sales Day (top 10 by revenue)
 SELECT order_ts::date AS day,
@@ -39,6 +47,12 @@ FROM orders
 GROUP BY day
 ORDER BY revenue DESC
 LIMIT 10;
+--OR
+-- SELECT DATE(date_time) AS order_day, SUM(sub_total) AS total_sales FROM Orders
+-- GROUP BY order_day
+-- ORDER BY total_sales DESC
+-- LIMIT 10;
+
 
 -- Special Query Q7: Menu Item Inventory (ingredients per product)  <-- use productingredients
 SELECT p.product_name, COUNT(pi.ingredient_id) AS ingredient_count
