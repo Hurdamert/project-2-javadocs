@@ -117,7 +117,7 @@ int main(int argc, char* argv[]){
 
     //add headers to csv
     string ordersHeader = "employee_id,sub_total,date_time";
-    string orderItemsHeader = "product_id,order_id,item_quantity";
+    string orderItemsHeader = "order_id,product_id,qty,item_price";
 
     orders << ordersHeader << "\n";
     orderItems << orderItemsHeader << "\n";
@@ -171,7 +171,8 @@ int main(int argc, char* argv[]){
                     subTotal += price * itemQuantity;
                     
                     //add to orderItems
-                    orderItems << productID << "," << orderID << "," << itemQuantity << "\n";
+                    orderItems << orderID << "," << productID << "," << itemQuantity << ","
+                        << price <<"\n";
                 }
                 
                 employeeID = (gen() % 5) + 1;
