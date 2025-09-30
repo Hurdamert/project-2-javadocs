@@ -26,7 +26,7 @@ ORDER BY 1,2;
 -- Special query Q5: Realistic Sales History (by hour)
 SELECT to_char(date_time, 'HH24') AS hour_of_day,
     COUNT(*) AS orders,
-    ROUND(SUM(total), 2) AS total_revenue
+    ROUND(SUM(sub_total), 2) AS total_revenue
 FROM Orders
 GROUP BY 1
 ORDER BY 1;
@@ -77,7 +77,7 @@ ORDER BY date_time DESC
 LIMIT 20;
 
 -- Special query Q12: Best of the Worst
-SELECT worst_day.order_day, p.product_name, worst_day.total_sales, SUM(oi.item_quantity) AS total_qty 
+SELECT worst_day.order_day, p.product_name, worst_day.total_sales, SUM(oi.qty) AS total_qty 
 FROM OrderItems oi 
 JOIN Orders o ON oi.order_id = o.order_id 
 JOIN Products p ON oi.product_id = p.product_id
