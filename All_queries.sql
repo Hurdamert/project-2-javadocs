@@ -1,15 +1,10 @@
 -- Q1: Categories (POS tabs)
 SELECT category_id, category_name
-<<<<<<< HEAD
 FROM categories
-=======
-FROM Categories
->>>>>>> 207f1ba1326128f695ad9bb1aea08906b8313469
 ORDER BY category_name;
 
 -- Q2: Products in a category (example: 1)
 SELECT product_id, product_name, product_price
-<<<<<<< HEAD
 FROM products
 WHERE category_id = 1
 ORDER BY product_name;
@@ -19,16 +14,6 @@ SELECT addon_id, addon_name, price_delta
 FROM addons
 WHERE category_id = 1
 ORDER BY addon_name;
-=======
-FROM Products
-WHERE category_id = 1
-ORDER BY product_id;
-
--- Q3: Get Add-ons
-SELECT addon_id, addon_name, addon_price
-FROM AddOns
-ORDER BY addon_id;
->>>>>>> 207f1ba1326128f695ad9bb1aea08906b8313469
 
 -- Special query Q4: Weekly Sales History 
 SELECT 
