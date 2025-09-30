@@ -29,7 +29,7 @@ CREATE TABLE Ingredients(
 CREATE TABLE ProductIngredients(
 	ingredient_id INT,
 	product_id INT,
-  product_amount INT,
+  ingredient_amount INT,
   FOREIGN KEY (ingredient_id) REFERENCES Ingredients (ingredient_id),
   FOREIGN KEY (product_id) REFERENCES Products (product_id)
 );
@@ -40,6 +40,7 @@ CREATE TABLE AddOns (
   addon_name TEXT NOT NULL,
   addon_price NUMERIC(10,2) NOT NULL DEFAULT 0 CHECK (addon_price >= 0),
   ingredient_id INT,
+  ingredient_amount INT,
   is_available BOOLEAN NOT NULL DEFAULT TRUE,
   FOREIGN KEY (ingredient_id) REFERENCES Ingredients (ingredient_id)
 );
