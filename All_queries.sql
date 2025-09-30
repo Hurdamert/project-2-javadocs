@@ -156,10 +156,3 @@ SELECT EXTRACT(DOW FROM date_time)::int AS dow,
 FROM Orders
 GROUP BY 1,2
 ORDER BY 1,2;
-
-
-
-
-
-
-

@@ -177,8 +177,12 @@ int main(int argc, char* argv[]){
                 }
                 
                 employeeID = (gen() % 5) + 1;
+                int randomHour = (gen() % 12) + 11;
+
+                string timeWithHours = timestamp + " " + to_string(randomHour) + ":00:00";
+                
                 //add to orders
-                orders << employeeID << "," << subTotal << "," << timestamp << "\n";
+                orders << employeeID << "," << subTotal << "," << timeWithHours << "\n";
 
                 orderID++;
                 dayTotal += subTotal;
