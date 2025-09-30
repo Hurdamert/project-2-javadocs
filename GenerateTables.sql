@@ -47,7 +47,7 @@ CREATE TABLE AddOns (
 -- Orders Table:
 CREATE TABLE Orders (
   order_id SERIAL PRIMARY KEY,
-  employee_id INT NOT NULL REFERENCES employee(employee_id),
+  employee_id INT,
   sub_total NUMERIC(10,2) NOT NULL CHECK (sub_total >= 0),
   date_time TIMESTAMP NOT NULL DEFAULT NOW(),
   FOREIGN KEY employee_id REFERENCES Employees (employee_id)
@@ -59,6 +59,7 @@ CREATE TABLE OrderItems(
   order_id INT,
   product_id INT,
   qty INT NOT NULL CHECK (qty > 0),
+  item_price NUMERIC(10, 2),
   FOREIGN KEY order_id REFERENCES Orders (order_id),
   FOREIGN KEY product_id REFERENCES Products (product_id)
 );
