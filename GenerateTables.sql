@@ -1,119 +1,72 @@
--- -- CREATE TABLE products (
--- --     product_name VARCHAR(255),
--- --     price INT
--- -- );
-
--- -- INSERT INTO products (product_name, price)
--- -- VALUES
--- -- ('Desktop Computer',800),
--- -- ('Laptop',1200),
--- -- ('Tablet',200),
--- -- ('Monitor',350),
--- -- ('Printer',150);
-
--- -- SELECT * FROM products;
--- CREATE TABLE EMPLOYEE(
---     employee_id INT PRIMARY KEY,
---     employee_name VARCHAR(255),
---     is_admin boolean;
-
--- );
-
--- CREATE TABLE ORDERS (
---     order_id INT PRIMARY KEY,
---     employee_id INT,
---     sub_total FLOAT,
---     date_time DATE,
---     week_id INT;
-
---     constraint order_made_by_employee FOREIGN KEY (employee_id) FROM REFERENCES EMPLOYEE(employee_id)
-
--- );
-
-
-
--- INSERT INTO CATEGORIES (category_id, category_name, active) VALUES ( );
-
--- INSERT INTO PRODUCTS (product_id, product_name, product_price, category_id) VALUES ( );
-
--- INSERT INTO EMPLOYEE (employee_id, employee_name, is_admin) VALUES ( );
-
--- INSERT INTO ORDERS (order_id, employee_id, sub_total, date_time) VALUES ( );
+-- Creating all database tables
 
 -- Categories Table:
-CREATE TABLE categories (
-  category_id   SERIAL PRIMARY KEY,
-  category_name TEXT NOT NULL UNIQUE,
-  active        BOOLEAN NOT NULL DEFAULT TRUE
+CREATE TABLE Categories (
+  category_id SERIAL PRIMARY KEY,
+  category_name TEXT NOT NULL UNIQUE
 );
 
-
-
--- Add-Ons table:
-CREATE TABLE addons (
-  addon_id     SERIAL PRIMARY KEY,
-  addon_name   TEXT NOT NULL,
-  price_delta  NUMERIC(6,2) NOT NULL DEFAULT 0 CHECK (price_delta >= 0),
-  category_id  INT  NOT NULL REFERENCES categories(category_id) ON UPDATE CASCADE,
-  is_available BOOLEAN NOT NULL DEFAULT TRUE,
-  UNIQUE (category_id, addon_name)
-);
-
-
-
--- Products table:
+-- Products Table:
 CREATE TABLE Products (
-	product_id 	INT PRIMARY KEY,
+	product_id SERIAL PRIMARY KEY,
 	product_name TEXT NOT NULL,
-	product_price 	DECIMAL,
-	category_id 	INT,
+	product_price NUMERIC(10, 2),
+	category_id INT,
 	FOREIGN KEY (category_id) REFERENCES Categories (category_id)
 );
--- Employee Table
-CREATE TABLE employee (
-  employee_id   SERIAL PRIMARY KEY,
-  employee_name TEXT NOT NULL,
-  role          TEXT NOT NULL CHECK (role IN ('Cashier','Manager')),
-  status        TEXT NOT NULL DEFAULT 'Active' CHECK (status IN ('Active','Inactive'))
-);
 
--- Order Table
-CREATE TABLE orders (
-  order_id    SERIAL PRIMARY KEY,
-  employee_id INT NOT NULL REFERENCES employee(employee_id),
-  order_ts    TIMESTAMPTZ NOT NULL,
-  sub_total   NUMERIC(10,2) NOT NULL CHECK (sub_total >= 0),
-  tax         NUMERIC(10,2) NOT NULL CHECK (tax >= 0),
-  total       NUMERIC(10,2) NOT NULL CHECK (total >= 0),
-  pay_type    TEXT NOT NULL CHECK (pay_type IN ('CASH','CARD','OTHER')),
-  CONSTRAINT chk_totals CHECK (ABS((sub_total + tax) - total) <= 0.01)
-);
-CREATE INDEX idx_orders_ts  ON orders(order_ts);
-CREATE INDEX idx_orders_emp ON orders(employee_id);
-
-
--- Line items for each order
-CREATE TABLE order_items(
-    order_item_id SERIAL PRIMARY KEY,
-    order_id INT NOT NULL REFERENCES orders(order_id) ON DELETE CASCADE,
-    product_id INT NOT NULL REFERENCES products(product_id),
-    qty INT NOT NULL CHECK (qty > 0),
-    unit_price NUMERIC(8,2) NOT NULL CHECK (unit_price >= 0)
+-- ProductIngredients Table:
+CREATE TABLE ProductIngredients(
+	ingredient_id INT,
+	product_id INT,
+  product_amount INT,
+  FOREIGN KEY (ingredient_id) REFERENCES Ingredients (ingredient_id),
+  FOREIGN KEY (product_id) REFERENCES Products (product_id)
 );
 
 -- Ingredients Table:
 CREATE TABLE Ingredients(
-	ingredient_id 	     	INT PRIMARY KEY,
-	ingredient_name 	TEXT NOT NULL,
-	quantity 	    	INT,
+	ingredient_id SERIAL PRIMARY KEY,
+	ingredient_name TEXT NOT NULL,
+	quantity INT,
 	minimum_quantity INT,
-	full_quantity INT
+	full_quantity INT,
+  ingredient_unit TEXT
 );
 
+-- AddOns table:
+CREATE TABLE AddOns (
+  addon_id SERIAL PRIMARY KEY,
+  addon_name TEXT NOT NULL,
+  addon_price NUMERIC(10,2) NOT NULL DEFAULT 0 CHECK (addon_price >= 0),
+  ingredient_id INT,
+  is_available BOOLEAN NOT NULL DEFAULT TRUE,
+  FOREIGN KEY (ingredient_id) REFERENCES Ingredients (ingredient_id)
+);
 
-CREATE TABLE ProductIngredients(
-	ingredient_id INT,
-	product_id INT,
-FOREIGN KEY (ingredient_id) REFERENCES Ingredients(ingredient_id),
-FOREIGN KEY (product_id) REFERENCES Products(product_id)
-); 
+-- Orders Table:
+CREATE TABLE Orders (
+  order_id SERIAL PRIMARY KEY,
+  employee_id INT NOT NULL REFERENCES employee(employee_id),
+  sub_total NUMERIC(10,2) NOT NULL CHECK (sub_total >= 0),
+  date_time TIMESTAMP NOT NULL DEFAULT NOW(),
+  FOREIGN KEY employee_id REFERENCES Employees (employee_id)
+);
+
+-- OrderItems Table:
+CREATE TABLE OrderItems(
+  order_item_id SERIAL PRIMARY KEY,
+  order_id INT,
+  product_id INT,
+  qty INT NOT NULL CHECK (qty > 0),
+  FOREIGN KEY order_id REFERENCES Orders (order_id),
+  FOREIGN KEY product_id REFERENCES Products (product_id)
+);
+
+-- Employees Table:
+CREATE TABLE Employees (
+  employee_id SERIAL PRIMARY KEY,
+  employee_name TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('Cashier','Manager')),
+  status TEXT NOT NULL DEFAULT 'Active' CHECK (status IN ('Active','Inactive'))
+);
