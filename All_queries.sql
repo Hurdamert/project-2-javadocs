@@ -1,18 +1,19 @@
 -- Q1: Categories (POS tabs)
 SELECT category_id, category_name
-FROM Categories
+FROM categories
 ORDER BY category_name;
 
 -- Q2: Products in a category (example: 1)
 SELECT product_id, product_name, product_price
-FROM Products
+FROM products
 WHERE category_id = 1
-ORDER BY product_id;
+ORDER BY product_name;
 
--- Q3: Get Add-ons
-SELECT addon_id, addon_name, addon_price
-FROM AddOns
-ORDER BY addon_id;
+-- Q3: Add-ons for a category (example: 1)
+SELECT addon_id, addon_name, price_delta
+FROM addons
+WHERE category_id = 1
+ORDER BY addon_name;
 
 -- Special query Q4: Weekly Sales History 
 SELECT 
@@ -22,14 +23,23 @@ SELECT
 FROM Orders
 GROUP BY 1,2
 ORDER BY 1,2;
+--OR
+-- SELECT EXTRACT(YEAR FROM date_time) AS year_num, EXTRACT(WEEK FROM date_time) AS week_num, COUNT(order_id) AS total_orders FROM Orders
+-- GROUP BY year_num, week_num
+-- ORDER BY year_num, week_num;
 
 -- Special query Q5: Realistic Sales History (by hour)
 SELECT to_char(date_time, 'HH24') AS hour_of_day,
     COUNT(*) AS orders,
-    ROUND(SUM(total), 2) AS total_revenue
+    ROUND(SUM(sub_total), 2) AS total_revenue
 FROM Orders
 GROUP BY 1
 ORDER BY 1;
+--OR
+-- SELECT EXTRACT(HOUR FROM date_time) AS hour_of_day, COUNT(order_id) AS total_orders, SUM(sub_total) AS total_sales FROM Orders
+-- GROUP BY hour_of_day
+-- ORDER BY hour_of_day;
+
 
 -- Special query Q6: Top Sales Day (top 10 by revenue)
 SELECT date_time::date AS day,
@@ -38,6 +48,12 @@ FROM Orders
 GROUP BY day
 ORDER BY revenue DESC
 LIMIT 10;
+--OR
+-- SELECT DATE(date_time) AS order_day, SUM(sub_total) AS total_sales FROM Orders
+-- GROUP BY order_day
+-- ORDER BY total_sales DESC
+-- LIMIT 10;
+
 
 -- Special Query Q7: Menu Item Inventory (ingredients per product)  <-- use productingredients
 SELECT p.product_name, COUNT(pi.ingredient_id) AS ingredient_count
@@ -77,7 +93,7 @@ ORDER BY date_time DESC
 LIMIT 20;
 
 -- Special query Q12: Best of the Worst
-SELECT worst_day.order_day, p.product_name, worst_day.total_sales, SUM(oi.item_quantity) AS total_qty 
+SELECT worst_day.order_day, p.product_name, worst_day.total_sales, SUM(oi.qty) AS total_qty 
 FROM OrderItems oi 
 JOIN Orders o ON oi.order_id = o.order_id 
 JOIN Products p ON oi.product_id = p.product_id
@@ -140,10 +156,3 @@ SELECT EXTRACT(DOW FROM date_time)::int AS dow,
 FROM Orders
 GROUP BY 1,2
 ORDER BY 1,2;
-
-
-
-
-
-
-
