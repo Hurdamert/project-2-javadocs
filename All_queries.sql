@@ -9,7 +9,7 @@ FROM products
 WHERE category_id = 1
 ORDER BY product_name;
 
--- Q3: Add-ons for a category (example: 1) -- Pass
+-- Q3: Get all Add-ons - Pass
 SELECT addon_id, addon_name, addon_price FROM addons
 ORDER BY addon_name;
 
@@ -107,13 +107,9 @@ WHERE oi.order_item_id IS NULL
 ORDER BY p.product_name;
 
 -- Q18: Orders by hour & weekday -- Pass
-SELECT to_char(date_time, 'Dy') AS dow, EXTRACT(HOUR FROM date_time) AS 24hour, COUNT(*) AS orders FROM orders
-GROUP BY dow, to_char(date_time, 'ID'), 24hour
-ORDER BY to_char(date_time, 'ID'), 24hour;
-
-
-
-
-
-
-
+SELECT EXTRACT(DOW FROM date_time)::int AS dow,   
+       EXTRACT(HOUR FROM date_time)::int AS hour24,
+       COUNT(*) AS orders
+FROM Orders
+GROUP BY 1,2
+ORDER BY 1,2;

@@ -40,7 +40,6 @@ CREATE TABLE AddOns (
   addon_name TEXT NOT NULL,
   addon_price NUMERIC(10,2) NOT NULL DEFAULT 0 CHECK (addon_price >= 0),
   ingredient_id INT,
-  ingredient_amount INT,
   is_available BOOLEAN NOT NULL DEFAULT TRUE,
   ingredient_amount INT,
   FOREIGN KEY (ingredient_id) REFERENCES Ingredients (ingredient_id)
@@ -105,11 +104,11 @@ INSERT INTO Products (product_name, product_price, category_id) VALUES
 
 -- Fruity Drinks
 INSERT INTO Products (product_name, product_price, category_id) VALUES
-('Fresh Milk Tea', 4.65, 2),
-('Wintermelon w/ Fresh Milk', 5.20, 2),
-('Cocoa Lover w/ Fresh Milk', 5.20, 2),
-('Matcha Fresh Milk', 6.25, 2),
-('Strawberry Matcha Fresh Milk', 6.50, 2),
+('Mango Green Tea', 5.80, 3),
+('Passion Fruit Tea', 6.25, 3),
+('Berry Lychee Burst', 6.25, 3),
+('Peach Tea w/ Honey Jelly', 6.25, 3),
+('Mango & Passion Fruit Tea', 6.25, 3),
 ('Honey Lemonade', 5.20, 3);
 
 -- Non Caffeinated
