@@ -9,10 +9,9 @@ FROM products
 WHERE category_id = 1
 ORDER BY product_name;
 
--- Q3: Add-ons for a category (example: 1)
-SELECT addon_id, addon_name, price_delta
+-- Q3: Get all Add-ons
+SELECT addon_id, addon_name, addon_price
 FROM addons
-WHERE category_id = 1
 ORDER BY addon_name;
 
 -- Special query Q4: Weekly Sales History 
@@ -132,7 +131,7 @@ ORDER BY revenue_rung DESC NULLS LAST, orders_rung DESC;
 SELECT ingredient_name, quantity, minimum_quantity
 FROM Ingredients; 
 
--- Q16: Quantity sold per day of product over last 30 days
+-- Q16: Quantity sold per day of product over last 30 days (ex: product_id = 1)
 SELECT o.date_time::date AS day,
        SUM(oi.qty) AS total_units_sold
 FROM Orders o
