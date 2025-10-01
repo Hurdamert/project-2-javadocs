@@ -9,14 +9,8 @@ FROM products
 WHERE category_id = 1
 ORDER BY product_name;
 
-<<<<<<< HEAD
--- Q3: Get all Add-ons
-SELECT addon_id, addon_name, addon_price
-FROM addons
-=======
--- Q3: Add-ons for a category (example: 1) -- Pass
+-- Q3: Get all Add-ons - Pass
 SELECT addon_id, addon_name, addon_price FROM addons
->>>>>>> main
 ORDER BY addon_name;
 
 -- Special query Q4: Weekly Sales History -- Pass
@@ -99,24 +93,12 @@ SELECT to_char(date_time, 'Day') AS day_of_week, ROUND(AVG(sub_total), 2) AS avg
 GROUP BY day_of_week, to_char(date_time, 'ID')
 ORDER BY to_char(date_time, 'ID'); 
 
-<<<<<<< HEAD
--- Q16: Quantity sold per day of product over last 30 days (ex: product_id = 1)
-SELECT o.date_time::date AS day,
-       SUM(oi.qty) AS total_units_sold
-FROM Orders o
-JOIN OrderItems oi ON oi.order_id = o.order_id
-WHERE o.date_time >= NOW() - INTERVAL '30 days'
-  AND oi.product_id = 1
-GROUP BY day
-ORDER BY day;
-=======
 -- Q16: Ingredient Usage (total things consumed) -- Pass
 SELECT i.ingredient_name, SUM(oi.qty) AS total_units_used, i.ingredient_unit FROM orderitems oi
 JOIN productingredients pi ON pi.product_id = oi.product_id
 JOIN ingredients i ON i.ingredient_id = pi.ingredient_id
 GROUP BY i.ingredient_name, i.ingredient_unit
 ORDER BY total_units_used DESC;
->>>>>>> main
 
 -- Q17: Products never sold (gap check) -- Pass
 SELECT p.product_id, p.product_name FROM products p
@@ -125,13 +107,9 @@ WHERE oi.order_item_id IS NULL
 ORDER BY p.product_name;
 
 -- Q18: Orders by hour & weekday -- Pass
-SELECT to_char(date_time, 'Dy') AS dow, EXTRACT(HOUR FROM date_time) AS 24hour, COUNT(*) AS orders FROM orders
-GROUP BY dow, to_char(date_time, 'ID'), 24hour
-ORDER BY to_char(date_time, 'ID'), 24hour;
-
-
-
-
-
-
-
+SELECT EXTRACT(DOW FROM date_time)::int AS dow,   
+       EXTRACT(HOUR FROM date_time)::int AS hour24,
+       COUNT(*) AS orders
+FROM Orders
+GROUP BY 1,2
+ORDER BY 1,2;
