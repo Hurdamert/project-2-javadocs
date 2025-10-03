@@ -1,5 +1,25 @@
-To run JavaFX GUI start by navigating to root project directory:
-cd project2-gang00
+# Project2 GUI
 
-Then use this maven command to build and run the application:
+A JavaFX-based GUI application, built with Maven.
+
+---
+
+## Running the GUI
+
+1. Clone the repository (if you haven’t already):
+
+```bash
+git clone https://github.com/CSCE331-Fall2025-900-911/project2-gang00.git
+```
+
+2. Navigate to the project root directory:
+
+```bash
+cd project2-gang00
+```
+
+3. Use Maven to build and run the JavaFX application:
+
+```bash
 mvn clean javafx:run
+```
