@@ -13,6 +13,7 @@ public class App extends Application {
         Scene scene = new Scene(fxmlLoader.load(), 800, 600);
 
         stage.setTitle("JavaFX FXML Example");
+        fxmlLoader.setController(new AppController());
         stage.setScene(scene);
         stage.setResizable(true);
         stage.show();
