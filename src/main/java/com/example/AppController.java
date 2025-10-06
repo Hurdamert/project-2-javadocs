@@ -50,11 +50,6 @@ public class AppController {
     // Right Side
     @FXML private Button chargeButton;
 
-    @FXML
-    private ListView<Products> orderList;
-    @FXML
-    private Label totalLabel;
-
     // Get database location and credentials
     private static final String DB_URL = "jdbc:postgresql://csce-315-db.engr.tamu.edu/gang_00_db";
     private dbSetup my = new dbSetup();
