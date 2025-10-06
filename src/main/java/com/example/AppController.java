@@ -39,7 +39,23 @@ public class AppController {
     }
 
     private void goMenu() {
-        System.out.println("Opening menu...");
+        Stage owner = (Stage) manager.getScene().getWindow(); // get the parent window
+
+        Button close = new Button("Close");
+        close.setOnAction(ev -> ((Stage) close.getScene().getWindow()).close());
+
+        VBox root = new VBox(12, new Label("Opening menu..."), close);
+        root.setStyle("-fx-padding:16;"); // we can also use CSS to link this I think
+        root.setAlignment(Pos.CENTER);
+        root.setSpacing(12);
+
+        Stage dialog = new Stage();
+        dialog.setTitle("Menu");
+        dialog.initOwner(owner);
+        dialog.initModality(Modality.WINDOW_MODAL); // The sub-window can work with parent window, we can use Modality.WINDOW_MODAL field to control the parent window that is the sub-window must go first, and the parent window would be freezed at this time.
+        dialog.setResizable(false);
+        dialog.setScene(new Scene(root, 360, 220));
+        dialog.showAndWait(); // Block until close
     }
 
     // This just a template window
@@ -56,8 +72,8 @@ public class AppController {
 
         Stage dialog = new Stage();
         dialog.setTitle("Manager");
-        dialog.initModality(Modality.NONE); // The sub-window can work with parent window, we can use Modality.WINDOW_MODAL field to control the parent window that is the sub-window must go first, and the parent window would be freezed at this time.
-        owner.setOnCloseRequest(e -> dialog.close()); // The sub-window will close once the parent window close
+        dialog.initOwner(owner);
+        dialog.initModality(Modality.WINDOW_MODAL); // The sub-window can work with parent window, we can use Modality.WINDOW_MODAL field to control the parent window that is the sub-window must go first, and the parent window would be freezed at this time.
         dialog.setResizable(false);
         dialog.setScene(new Scene(root, 360, 220));
         dialog.showAndWait(); // Block until close
