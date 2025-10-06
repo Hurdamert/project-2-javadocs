@@ -8,6 +8,10 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
+import javafx.scene.control.ListView;
 
 import com.gluonhq.charm.glisten.control.BottomNavigationButton;
 
@@ -22,6 +26,9 @@ public class AppController {
     @FXML private BottomNavigationButton transactions;
     @FXML private BottomNavigationButton clockInOut;
     @FXML private BottomNavigationButton more;
+
+    @FXML private ListView<Products> orderList;
+    @FXML private Label totalLabel;
 
 
     @FXML

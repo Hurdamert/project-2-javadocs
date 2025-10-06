@@ -4,6 +4,7 @@
 <?import com.gluonhq.charm.glisten.control.BottomNavigationButton?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.BorderPane?>
@@ -41,7 +42,8 @@
       <VBox prefHeight="200.0" prefWidth="100.0" BorderPane.alignment="CENTER">
          <children>
             <Label text="Order Details" VBox.vgrow="ALWAYS" />
-            <Region prefHeight="200.0" prefWidth="200.0" />
+            <ListView fx:id="orderList" prefHeight="200.0" prefWidth="200.0" />
+            <Label fx:id="totalLabel" text="Total:" />
             <Button mnemonicParsing="false" text="Charge" VBox.vgrow="ALWAYS" />
          </children>
       </VBox>
