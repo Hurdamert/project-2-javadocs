@@ -22,6 +22,10 @@ import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
+import javafx.scene.control.ListView;
 
 public class AppController {
 
@@ -39,6 +43,9 @@ public class AppController {
     @FXML private BottomNavigationButton transactions;
     @FXML private BottomNavigationButton clockInOut;
     @FXML private BottomNavigationButton more;
+
+    @FXML private ListView<Products> orderList;
+    @FXML private Label totalLabel;
 
 
     // Get database location and credentials
