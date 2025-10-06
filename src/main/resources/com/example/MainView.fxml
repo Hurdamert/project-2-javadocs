@@ -55,19 +55,11 @@
    </right>
 
    <center>
-      <ScrollPane prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER">
-         <content>
-            <AnchorPane minHeight="0.0" minWidth="0.0">
+      <ScrollPane fx:id="centerScrollPane" prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER">
+        <content>
+          <AnchorPane fx:id="centerAnchorPane" minHeight="0.0" minWidth="0.0">
                <children>
-                  <HBox>
-                     <children>
-                        <Button mnemonicParsing="false" text="Fresh Brew"     HBox.hgrow="ALWAYS" />
-                        <Button mnemonicParsing="false" text="Milky"          HBox.hgrow="SOMETIMES" />
-                        <Button mnemonicParsing="false" text="Fruity Bev"     HBox.hgrow="ALWAYS" />
-                        <Button mnemonicParsing="false" text="Non Caff."      HBox.hgrow="ALWAYS" />
-                        <Button mnemonicParsing="false" text="Matcha Series"  HBox.hgrow="ALWAYS" />
-                     </children>
-                  </HBox>
+                  
                </children>
             </AnchorPane>
          </content>
