@@ -27,6 +27,7 @@ public class AppController {
     @FXML
     private void initialize() {
         // myButton.setOnAction(e -> System.out.println("Button clicked!"));
+        // Listen all button events
         mainMenu.setOnAction(e -> goMenu());
         manager.setOnAction(e -> managerPage());
         newOrder.setOnAction(e -> createNeworder());
