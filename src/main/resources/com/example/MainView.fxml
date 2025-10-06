@@ -8,29 +8,36 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.AppController">
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity"
+            prefHeight="400.0" prefWidth="600.0"
+            xmlns="http://javafx.com/javafx/25"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.example.AppController">
+
    <left>
       <StackPane prefHeight="150.0" prefWidth="200.0" BorderPane.alignment="CENTER">
          <children>
             <VBox prefHeight="200.0" prefWidth="100.0">
                <children>
-                  <Button fx:id="mainMenu" mnemonicParsing="false" onAction="#initialize" text="Main Menu" />
-                  <Button fx:id="manager" mnemonicParsing="false" onAction="#initialize" text="Manager" />
+                  <Button fx:id="mainMenu" mnemonicParsing="false" text="Main Menu" />
+                  <Button fx:id="manager"  mnemonicParsing="false" text="Manager" />
                   <Region prefHeight="276.0" prefWidth="200.0" VBox.vgrow="ALWAYS" />
-                  <Button fx:id="newOrder" mnemonicParsing="false" onAction="#initialize" text="New Order" VBox.vgrow="ALWAYS" />
+                  <Button fx:id="newOrder" mnemonicParsing="false" text="New Order" VBox.vgrow="ALWAYS" />
                </children>
             </VBox>
          </children>
       </StackPane>
    </left>
+
    <bottom>
       <BottomNavigation BorderPane.alignment="CENTER">
-          <actionItems>
-              <BottomNavigationButton fx:id="checkOut" onAction="#initialize" selected="true" text="Checkout" />
-              <BottomNavigationButton fx:id="transactions" onAction="#initialize" text="Transactions" />
-              <BottomNavigationButton fx:id="clockInOut" onAction="#initialize" text="Clock In/Out" />
-            <BottomNavigationButton fx:id="more" onAction="#initialize" text="More" />
-          </actionItems>
+         <actionItems>
+            <BottomNavigationButton fx:id="checkOut"     selected="true" text="Checkout" />
+            <BottomNavigationButton fx:id="transactions"                text="Transactions" />
+            <BottomNavigationButton fx:id="clockInOut"                  text="Clock In/Out" />
+            <BottomNavigationButton fx:id="more"                        text="More" />
+         </actionItems>
       </BottomNavigation>
    </bottom>
+
 </BorderPane>
