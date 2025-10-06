@@ -12,16 +12,16 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1">
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.AppController">
    <left>
       <StackPane prefHeight="150.0" prefWidth="200.0" BorderPane.alignment="CENTER">
          <children>
             <VBox prefHeight="365.0" prefWidth="141.0">
                <children>
-                  <Button mnemonicParsing="false" text="Main Menu" />
-                  <Button mnemonicParsing="false" text="Manager" />
+                  <Button fx:id="mainMenu" mnemonicParsing="false" onAction="#initialize" text="Main Menu" />
+                  <Button fx:id="manager" mnemonicParsing="false" onAction="#initialize" text="Manager" />
                   <Region prefHeight="275.0" prefWidth="133.0" VBox.vgrow="ALWAYS" />
-                  <Button mnemonicParsing="false" text="New Order" VBox.vgrow="ALWAYS" />
+                  <Button fx:id="newOrder" mnemonicParsing="false" onAction="#initialize" text="New Order" VBox.vgrow="ALWAYS" />
                </children>
             </VBox>
          </children>
