@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import com.gluonhq.charm.glisten.control.BottomNavigation?>
+<?import com.gluonhq.charm.glisten.control.BottomNavigationButton?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity"
+            prefHeight="400.0" prefWidth="600.0"
+            xmlns="http://javafx.com/javafx/25"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.example.AppController">
+
+   <left>
+      <StackPane prefHeight="150.0" prefWidth="200.0" BorderPane.alignment="CENTER">
+         <children>
+            <VBox prefHeight="365.0" prefWidth="141.0">
+               <children>
+                  <Button fx:id="mainMenu" mnemonicParsing="false" text="Main Menu" />
+                  <Button fx:id="manager"  mnemonicParsing="false" text="Manager" />
+                  <Region prefHeight="276.0" prefWidth="200.0" VBox.vgrow="ALWAYS" />
+                  <Button fx:id="newOrder" mnemonicParsing="false" text="New Order" VBox.vgrow="ALWAYS" />
+               </children>
+            </VBox>
+         </children>
+      </StackPane>
+   </left>
+
+   <bottom>
+      <BottomNavigation BorderPane.alignment="CENTER">
+         <actionItems>
+            <BottomNavigationButton fx:id="checkOut"     selected="true" text="Checkout" />
+            <BottomNavigationButton fx:id="transactions"                text="Transactions" />
+            <BottomNavigationButton fx:id="clockInOut"                  text="Clock In/Out" />
+            <BottomNavigationButton fx:id="more"                        text="More" />
+         </actionItems>
+      </BottomNavigation>
+   </bottom>
+
+   <right>
+      <VBox prefHeight="200.0" prefWidth="100.0" BorderPane.alignment="CENTER">
+         <children>
+            <Label text="Order Details" VBox.vgrow="ALWAYS" />
+            <Region prefHeight="200.0" prefWidth="200.0" />
+            <Button mnemonicParsing="false" text="Charge" VBox.vgrow="ALWAYS" />
+         </children>
+      </VBox>
+   </right>
+
+   <center>
+      <ScrollPane fx:id="centerScrollPane" prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER">
+        <content>
+          <AnchorPane fx:id="centerAnchorPane" minHeight="0.0" minWidth="0.0">
+               <children>
+                  
+               </children>
+            </AnchorPane>
+         </content>
+      </ScrollPane>
+   </center>
+
+</BorderPane>
