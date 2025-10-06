@@ -14,6 +14,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
@@ -22,21 +23,22 @@ import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
-import javafx.collections.ObservableList;
-import javafx.scene.control.ListView;
 
 public class AppController {
 
     // Left Side
-    @FXML private Button mainMenu;
-    @FXML private Button manager;
-    @FXML private Button newOrder;
+    @FXML
+    private Button mainMenu;
+    @FXML
+    private Button manager;
+    @FXML
+    private Button newOrder;
 
     // Center
-    @FXML private ScrollPane centerScrollPane;
-    @FXML private AnchorPane centerAnchorPane;
+    @FXML
+    private ScrollPane centerScrollPane;
+    @FXML
+    private AnchorPane centerAnchorPane;
 
     // Bottom nav
     @FXML private BottomNavigationButton checkOut;
@@ -45,12 +47,18 @@ public class AppController {
     @FXML private BottomNavigationButton more;
 
     @FXML private ListView<Products> orderList;
-    @FXML private Label totalLabel;
+    @FXML private Text totalLabel;
+    @FXML private Text taxLabel;
 
+    // Right Side
+    @FXML private Button chargeButton;
 
     // Get database location and credentials
     private static final String DB_URL = "jdbc:postgresql://csce-315-db.engr.tamu.edu/gang_00_db";
     private dbSetup my = new dbSetup();
+
+    private double currentSubTotal = 0;
+
 
 
     @FXML
@@ -59,11 +67,12 @@ public class AppController {
         mainMenu.setOnAction(e -> getCategories());
         manager.setOnAction(e -> managerPage());
         newOrder.setOnAction(e -> createNeworder());
-        
+
         checkOut.setOnAction(e -> checkout());
         transactions.setOnAction(e -> openTransaction());
         clockInOut.setOnAction(e -> clockIn_Out());
         more.setOnAction(e -> showMore());
+        chargeButton.setOnAction(e -> checkOutOrder());
     }
 
     private void getCategories() {
@@ -169,7 +178,8 @@ public class AppController {
             Class.forName("org.postgresql.Driver");
             Connection conn = DriverManager.getConnection(DB_URL, my.user, my.pswd);
             Statement stmt1 = conn.createStatement();
-            ResultSet rs1 = stmt1.executeQuery("SELECT product_name, product_price FROM products WHERE product_id = " + product_id);
+            ResultSet rs1 = stmt1
+                    .executeQuery("SELECT product_name, product_price FROM products WHERE product_id = " + product_id);
 
             if (rs1.next()) {
                 String product_name = rs1.getString("product_name");
@@ -187,11 +197,8 @@ public class AppController {
                 int product_quantity = quantity.get();
 
                 Button orderButton = new Button("Add to order");
-                orderButton.setOnAction(
-                    //e -> addOrderItem(product_id, product_name, product_price, product_quantity)
-                    e -> System.out.println("not yet done")
-                    );
-                productInfo.getChildren().addAll(productText, productPrice, quantitySelector, orderButton);
+                orderButton.setOnAction(e -> addItemToOrder(product_price));
+                productInfo.getChildren().addAll(productText, productPrice, orderButton);
                 productPane.getChildren().add(productInfo);
                 productPane.setStyle("-fx-padding: 20px 10 0 0;");
             }
@@ -224,23 +231,22 @@ public class AppController {
 
     // This just a template window
     private void managerPage() {
-        Stage owner = (Stage) manager.getScene().getWindow(); // get the parent window
+        try {
+            Stage owner = (Stage) manager.getScene().getWindow();
+            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(
+                    getClass().getResource("/com/example/ManagerPage.fxml"));
+            javafx.scene.Parent root = loader.load();
 
-        Button close = new Button("Close");
-        close.setOnAction(ev -> ((Stage) close.getScene().getWindow()).close());
-
-        VBox root = new VBox(12, new Label("Opening manager page..."), close);
-        root.setStyle("-fx-padding:16;"); // we can also use CSS to link this I think
-        root.setAlignment(Pos.CENTER);
-        root.setSpacing(12);
-
-        Stage dialog = new Stage();
-        dialog.setTitle("Manager");
-        dialog.initModality(Modality.NONE); // The sub-window can work with parent window, we can use Modality.WINDOW_MODAL field to control the parent window that is the sub-window must go first, and the parent window would be freezed at this time.
-        owner.setOnCloseRequest(e -> dialog.close()); // The sub-window will close once the parent window close
-        dialog.setResizable(false);
-        dialog.setScene(new Scene(root, 360, 220));
-        dialog.showAndWait(); // Block until close
+            Stage dialog = new Stage();
+            dialog.setTitle("Manager");
+            dialog.initOwner(owner);
+            dialog.initModality(Modality.WINDOW_MODAL);
+            dialog.setResizable(true);
+            dialog.setScene(new Scene(root, 900, 530));
+            dialog.show();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
     }
 
     private void createNeworder() {
@@ -265,10 +271,31 @@ public class AppController {
         System.out.println("More information...");
     }
 
+    private void checkOutOrder() {
+        System.out.println("Checked out yo!");
+        currentSubTotal = 0;
+        updateTotalAndTax();
+
+        // go back to the main menu
+        getCategories();
+    }
+
+    private void addItemToOrder(double priceToAddToTotal){
+        System.out.println("Item added!");
+        currentSubTotal += priceToAddToTotal;
+        updateTotalAndTax();
+    }
+
+    private void updateTotalAndTax(){
+        totalLabel.setText(String.format("Total: $%.2f", currentSubTotal));
+        taxLabel.setText(String.format("Tax: $%.2f", currentSubTotal * 0.05));
+    }
+
     // Creates a reusable category card
     private VBox createCategoryCard(String category_name, int category_id) {
         VBox card = new VBox(5);
-        card.setStyle("-fx-border-color: black; -fx-border-radius: 5; -fx-background-color: #b9b9b9ff; -fx-background-radius: 5;");
+        card.setStyle(
+                "-fx-border-color: black; -fx-border-radius: 5; -fx-background-color: #b9b9b9ff; -fx-background-radius: 5;");
         card.setPadding(new javafx.geometry.Insets(10));
 
         Text text = new Text(category_name);
@@ -283,7 +310,8 @@ public class AppController {
     // Creates a reusable product card
     private VBox createProductCard(String product_name, int product_id, int category_id) {
         VBox card = new VBox(5);
-        card.setStyle("-fx-border-color: black; -fx-border-radius: 5; -fx-background-color: #b9b9b9ff; -fx-background-radius: 5;");
+        card.setStyle(
+                "-fx-border-color: black; -fx-border-radius: 5; -fx-background-color: #b9b9b9ff; -fx-background-radius: 5;");
         card.setPadding(new javafx.geometry.Insets(10));
 
         Text text = new Text(product_name);
@@ -298,7 +326,8 @@ public class AppController {
     // Creates a reusable addon card
     private VBox createAddonCard(String addon_name, double addon_price, int addon_id) {
         VBox card = new VBox(5);
-        card.setStyle("-fx-border-color: black; -fx-border-radius: 5; -fx-background-color: #b9b9b9ff; -fx-background-radius: 5;");
+        card.setStyle(
+                "-fx-border-color: black; -fx-border-radius: 5; -fx-background-color: #b9b9b9ff; -fx-background-radius: 5;");
         card.setPadding(new javafx.geometry.Insets(10));
 
         Text name = new Text(addon_name);
