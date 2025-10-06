@@ -7,6 +7,8 @@ import java.sql.Statement;
 
 import com.gluonhq.charm.glisten.control.BottomNavigationButton;
 
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -15,6 +17,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.TilePane;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
@@ -49,11 +52,6 @@ public class AppController {
 
     // Right Side
     @FXML private Button chargeButton;
-
-    @FXML
-    private ListView<Products> orderList;
-    @FXML
-    private Label totalLabel;
 
     // Get database location and credentials
     private static final String DB_URL = "jdbc:postgresql://csce-315-db.engr.tamu.edu/gang_00_db";
@@ -191,8 +189,13 @@ public class AppController {
 
                 Text productText = new Text(product_name);
                 productText.setStyle("-fx-font-weight: bold; -fx-font-size: 30px;");
-                Text productPrice = new Text("Current Price: $" + product_price);
+                Text productPrice = new Text("Item Price: $" + product_price);
                 productPrice.setStyle("-fx-font-size: 20px;");
+
+                IntegerProperty quantity = new SimpleIntegerProperty(1);
+                HBox quantitySelector = createQuantitySelector(quantity);
+                int product_quantity = quantity.get();
+
                 Button orderButton = new Button("Add to order");
                 orderButton.setOnAction(e -> addItemToOrder(product_price));
                 productInfo.getChildren().addAll(productText, productPrice, orderButton);
@@ -297,10 +300,10 @@ public class AppController {
 
         Text text = new Text(category_name);
         text.setStyle("-fx-font-weight: bold;");
-        javafx.scene.control.Button button = new javafx.scene.control.Button("Select");
-        button.setOnAction(e -> showProducts(category_id));
+        //javafx.scene.control.Button button = new javafx.scene.control.Button("Select");
+        card.setOnMouseClicked(e -> showProducts(category_id));
 
-        card.getChildren().addAll(text, button);
+        card.getChildren().addAll(text);
         return card;
     }
 
@@ -313,10 +316,10 @@ public class AppController {
 
         Text text = new Text(product_name);
         text.setStyle("-fx-font-weight: bold;");
-        javafx.scene.control.Button button = new javafx.scene.control.Button("Select");
-        button.setOnAction(e -> getProduct(product_id, category_id));
+        //javafx.scene.control.Button button = new javafx.scene.control.Button("Select");
+        card.setOnMouseClicked(e -> getProduct(product_id, category_id));
 
-        card.getChildren().addAll(text, button);
+        card.getChildren().addAll(text);
         return card;
     }
 
@@ -331,10 +334,36 @@ public class AppController {
         name.setStyle("-fx-font-weight: bold;");
         Text price = new Text("Add-on Price: $" + addon_price);
         javafx.scene.control.Button button = new javafx.scene.control.Button("Add");
-        // button.setOnAction(e -> getProduct(product_id, category_id));
+        button.setOnMouseClicked(
+            //e -> getProduct(product_id, category_id)
+            e -> System.out.println("Addon item clicked")
+            );
 
         card.getChildren().addAll(name, price, button);
         return card;
     }
-    
+
+    public static HBox createQuantitySelector(IntegerProperty quantity) {
+        Button minusButton = new Button("-");
+        Button plusButton = new Button("+");
+        Label quantityLabel = new Label();
+        quantityLabel.textProperty().bind(quantity.asString());
+
+        // Set button actions
+        minusButton.setOnAction(e -> {
+            if (quantity.get() > 1) {
+                quantity.set(quantity.get() - 1);
+            }
+        });
+
+        plusButton.setOnAction(e -> {
+            quantity.set(quantity.get() + 1);
+        });
+
+        HBox box = new HBox(5); // spacing between buttons and label
+        box.setAlignment(Pos.CENTER);
+        box.getChildren().addAll(minusButton, quantityLabel, plusButton);
+
+        return box;
+    }
 }
