@@ -12,6 +12,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.TilePane;
@@ -19,10 +20,6 @@ import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
-import javafx.collections.ObservableList;
-import javafx.scene.control.ListView;
 
 public class AppController {
 
@@ -42,12 +39,19 @@ public class AppController {
     @FXML private BottomNavigationButton more;
 
     @FXML private ListView<Products> orderList;
-    @FXML private Label totalLabel;
+    @FXML private Text totalLabel;
+    @FXML private Text taxLabel;
+
+    // Right Side
+    @FXML private Button chargeButton;
 
 
     // Get database location and credentials
     private static final String DB_URL = "jdbc:postgresql://csce-315-db.engr.tamu.edu/gang_00_db";
     private dbSetup my = new dbSetup();
+
+    private double currentSubTotal = 0;
+
 
 
     @FXML
@@ -61,6 +65,7 @@ public class AppController {
         transactions.setOnAction(e -> openTransaction());
         clockInOut.setOnAction(e -> clockIn_Out());
         more.setOnAction(e -> showMore());
+        chargeButton.setOnAction(e -> checkOutOrder());
     }
 
     private void getCategories() {
@@ -179,6 +184,7 @@ public class AppController {
                 Text productPrice = new Text("Current Price: $" + product_price);
                 productPrice.setStyle("-fx-font-size: 20px;");
                 Button orderButton = new Button("Add to order");
+                orderButton.setOnAction(e -> addItemToOrder(product_price));
                 productInfo.getChildren().addAll(productText, productPrice, orderButton);
                 productPane.getChildren().add(productInfo);
                 productPane.setStyle("-fx-padding: 20px 10 0 0;");
@@ -253,6 +259,26 @@ public class AppController {
         System.out.println("More information...");
     }
 
+    private void checkOutOrder() {
+        System.out.println("Checked out yo!");
+        currentSubTotal = 0;
+        updateTotalAndTax();
+
+        // go back to the main menu
+        getCategories();
+    }
+
+    private void addItemToOrder(double priceToAddToTotal){
+        System.out.println("Item added!");
+        currentSubTotal += priceToAddToTotal;
+        updateTotalAndTax();
+    }
+
+    private void updateTotalAndTax(){
+        totalLabel.setText(String.format("Total: $%.2f", currentSubTotal));
+        taxLabel.setText(String.format("Tax: $%.2f", currentSubTotal * 0.05));
+    }
+
     // Creates a reusable category card
     private VBox createCategoryCard(String category_name, int category_id) {
         VBox card = new VBox(5);
@@ -298,4 +324,5 @@ public class AppController {
         card.getChildren().addAll(name, price, button);
         return card;
     }
+    
 }
