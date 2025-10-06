@@ -30,10 +30,10 @@
    <bottom>
       <BottomNavigation BorderPane.alignment="CENTER">
           <actionItems>
-              <BottomNavigationButton selected="true" text="Checkout" />
-              <BottomNavigationButton text="Transactions" />
-              <BottomNavigationButton text="Clock In/Out" />
-            <BottomNavigationButton text="More" />
+              <BottomNavigationButton fx:id="checkOut" onAction="#initialize" selected="true" text="Checkout" />
+              <BottomNavigationButton fx:id="transactions" onAction="#initialize" text="Transactions" />
+              <BottomNavigationButton fx:id="clockInOut" onAction="#initialize" text="Clock In/Out" />
+            <BottomNavigationButton fx:id="more" onAction="#initialize" text="More" />
           </actionItems>
       </BottomNavigation>
    </bottom>
