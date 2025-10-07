@@ -14,10 +14,7 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane prefHeight="530.0" prefWidth="900.0"
-            xmlns="http://javafx.com/javafx/25"
-            xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="com.example.ManagerController">
+<BorderPane prefHeight="530.0" prefWidth="900.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.ManagerController">
 
    <!-- Center: Inventory management  -->
    <center>
@@ -27,21 +24,21 @@
             <!-- Inventory table -->
             <TableView fx:id="inventoryTable" prefHeight="495.0" prefWidth="380.0">
                <columns>
-                  <TableColumn fx:id="colItem"  prefWidth="220.0" text="Item"/>
-                  <TableColumn fx:id="colStock" prefWidth="120.0" text="Stock"/>
+                  <TableColumn fx:id="colItem" prefWidth="220.0" text="Item" />
+                  <TableColumn fx:id="colStock" prefWidth="120.0" text="Stock" />
                </columns>
             </TableView>
 
             <!-- Form for add/update -->
-            <VBox spacing="8" prefWidth="220.0">
+            <VBox prefWidth="220.0" spacing="8">
                <children>
-                  <Label text="Add / Update Inventory"/>
-                  <TextField fx:id="nameField" promptText="Item name"/>
-                  <TextField fx:id="qtyField"  promptText="Quantity (int)"/>
+                  <Label text="Add / Update Inventory" />
+                  <TextField fx:id="nameField" promptText="Item name" />
+                  <TextField fx:id="qtyField" promptText="Quantity (int)" />
                   <HBox spacing="8">
                      <children>
-                        <Button text="Add"    onAction="#onAddInventory"/>
-                        <Button text="Update" onAction="#onUpdateInventory"/>
+                        <Button onAction="#onAddInventory" text="Add" />
+                        <Button onAction="#onUpdateInventory" text="Update" />
                      </children>
                   </HBox>
                   <Label fx:id="statusLabel" text="" />
@@ -51,7 +48,7 @@
             <!-- Simple bar chart for reports placeholder -->
             <BarChart fx:id="supplyChart" prefHeight="482.0" prefWidth="320.0">
                <xAxis><CategoryAxis side="BOTTOM" /></xAxis>
-               <yAxis><NumberAxis   side="LEFT"   /></yAxis>
+               <yAxis><NumberAxis side="LEFT" /></yAxis>
             </BarChart>
 
          </children>
@@ -62,10 +59,10 @@
    <bottom>
       <BottomNavigation BorderPane.alignment="CENTER">
          <actionItems>
-            <BottomNavigationButton text="Inventory"    selected="true"/>
-            <BottomNavigationButton text="Menu"/>
-            <BottomNavigationButton text="Employees"/>
-            <BottomNavigationButton text="Reports"/>
+            <BottomNavigationButton selected="true" text="Inventory" />
+            <BottomNavigationButton fx:id="displayMenu" onAction="#initialize" text="Menu" />
+            <BottomNavigationButton fx:id="employeeData" onAction="#initialize" text="Employees" />
+            <BottomNavigationButton text="Reports" />
          </actionItems>
       </BottomNavigation>
    </bottom>

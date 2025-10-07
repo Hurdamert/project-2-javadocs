@@ -4,10 +4,16 @@ import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.chart.BarChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.VBox;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 
 import java.sql.*;
 
@@ -43,6 +49,11 @@ public class ManagerController {
     @FXML private BottomNavigationButton displayMenu;
 
 
+    @FXML
+    private BottomNavigationButton employeeData;
+    @FXML
+    private BottomNavigationButton saleHistory; 
+
     // --- DB config
     private static final String DB_URL = "jdbc:postgresql://csce-315-db.engr.tamu.edu/gang_00_db";
     private final dbSetup my = new dbSetup();
@@ -67,7 +78,65 @@ public class ManagerController {
         refreshInventory();
         refreshChart();
 
+        employeeData.setOnAction(e -> showEmployeesData());
         displayMenu.setOnAction(e -> displayMenu());
+    }
+
+    @FXML
+    private void showEmployeesData() {
+        try {
+            // Build the connection
+            Class.forName("org.postgresql.Driver");
+            Connection conn = DriverManager.getConnection(DB_URL, my.user, my.pswd);
+
+            // Create statement
+            Statement stmt = conn.createStatement();
+
+            // Run sql query
+            String sqlStatement = "SELECT * FROM employees ORDER BY employee_id";
+            ResultSet rs = stmt.executeQuery(sqlStatement);
+
+            TableView<EmployeeRow> table = new TableView<>();
+            TableColumn<EmployeeRow, Integer> rsId = new TableColumn<>("ID");
+            TableColumn<EmployeeRow, String> rsName = new TableColumn<>("Name");
+            TableColumn<EmployeeRow, String> rsRole = new TableColumn<>("Role");
+            TableColumn<EmployeeRow, String> rsStatus = new TableColumn<>("Status");
+            rsId.setCellValueFactory(new PropertyValueFactory<>("employeeId"));
+            rsName.setCellValueFactory(new PropertyValueFactory<>("employeeName"));
+            rsRole.setCellValueFactory(new PropertyValueFactory<>("role"));
+            rsStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
+            table.getColumns().addAll(rsId, rsName, rsRole, rsStatus);
+
+            // output result
+            while (rs.next()) {
+                int employee_id = rs.getInt("employee_id");
+                String employee_name = rs.getString("employee_name");
+                String employee_role = rs.getString("role");
+                String status = rs.getString("status");
+
+                table.getItems().add(new EmployeeRow(employee_id, employee_name, employee_role, status));
+            }
+            
+            Stage owner = (Stage) employeeData.getScene().getWindow();
+            Stage dialog = new Stage();
+            dialog.setTitle("Employees");
+            // dialog.initOwner(owner);
+            dialog.initModality(Modality.NONE);
+            owner.setOnCloseRequest(e -> dialog.close());
+            dialog.setScene(new Scene(new BorderPane(table), 580, 420));
+            dialog.setResizable(true);
+            dialog.show();
+
+            // Close connection
+            rs.close();
+            stmt.close();
+            conn.close();
+
+        } catch (Exception e) {
+            System.out.println("Error with database.");
+            e.printStackTrace();
+            System.exit(0);
+        }
     }
 
     // --- UI actions
@@ -258,26 +327,55 @@ public class ManagerController {
     }
 
     private void displayMenu() {
-        String sql = "SELECT menu_id, menu_name, price FROM menu ORDER BY menu_name";
+        try {
+            // Build the connection
+            Class.forName("org.postgresql.Driver");
+            Connection conn = DriverManager.getConnection(DB_URL, my.user, my.pswd);
 
-        try (Connection conn = DriverManager.getConnection(DB_URL, my.user, my.pswd);
+            // Create statement
             Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery(sql)) {
 
-            System.out.println("Menu Items:");
+            // Run sql query
+            String sqlStatement = "SELECT * FROM products ORDER BY product_id";
+            ResultSet rs = stmt.executeQuery(sqlStatement);
+
+            TableView<ProductRow> table = new TableView<>();
+            TableColumn<ProductRow, Integer> rsId = new TableColumn<>("ID");
+            TableColumn<ProductRow, String> rsName = new TableColumn<>("Name");
+            TableColumn<ProductRow, String> rsPrice = new TableColumn<>("Price");
+            rsId.setCellValueFactory(new PropertyValueFactory<>("productId"));
+            rsName.setCellValueFactory(new PropertyValueFactory<>("productName"));
+            rsPrice.setCellValueFactory(new PropertyValueFactory<>("productPrice"));
+            table.getColumns().addAll(rsId, rsName, rsPrice);
+
+            // output result
             while (rs.next()) {
-                int id = rs.getInt("menu_id");
-                String name = rs.getString("menu_name");
-                double price = rs.getDouble("price");
+                int product_id = rs.getInt("product_id");
+                String product_name = rs.getString("product_name");
+                String product_price = rs.getString("product_price");
 
-                System.out.printf("ID: %d | Item: %s | Price: $%.2f%n", id, name, price);
+                table.getItems().add(new ProductRow(product_id, product_name, product_price));
             }
+            
+            Stage owner = (Stage) employeeData.getScene().getWindow();
+            Stage dialog = new Stage();
+            dialog.setTitle("Menu");
+            // dialog.initOwner(owner);
+            dialog.initModality(Modality.NONE);
+            owner.setOnCloseRequest(e -> dialog.close());
+            dialog.setScene(new Scene(new BorderPane(table), 580, 420));
+            dialog.setResizable(true);
+            dialog.show();
 
-            status("Menu displayed in console.");
+            // Close connection
+            rs.close();
+            stmt.close();
+            conn.close();
 
-        } catch (SQLException e) {
+        } catch (Exception e) {
+            System.out.println("Error with database.");
             e.printStackTrace();
-            status("Failed to load menu: " + e.getMessage());
+            System.exit(0);
         }
     }
 }
