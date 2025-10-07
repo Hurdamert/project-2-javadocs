@@ -79,8 +79,8 @@
       <BottomNavigation BorderPane.alignment="CENTER">
          <actionItems>
             <BottomNavigationButton selected="true" text="Inventory" />
-            <BottomNavigationButton text="Menu" />
-            <BottomNavigationButton text="Employees" />
+            <BottomNavigationButton fx:id="displayMenu" onAction="#initialize" text="Menu" />
+            <BottomNavigationButton fx:id="employeeData" onAction="#initialize" text="Employees" />
             <BottomNavigationButton text="Reports" />
          </actionItems>
       </BottomNavigation>

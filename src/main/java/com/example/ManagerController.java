@@ -39,6 +39,10 @@ public class ManagerController {
     @FXML
     private BarChart<String, Number> supplyChart;
 
+    // Bottom nav
+    @FXML private BottomNavigationButton displayMenu;
+
+
     @FXML
     private BottomNavigationButton employeeData;
     @FXML
@@ -71,6 +75,7 @@ public class ManagerController {
         refreshChart();
 
         employeeData.setOnAction(e -> showEmployeesData());
+        displayMenu.setOnAction(e -> displayMenu());
     }
 
     @FXML
@@ -295,9 +300,56 @@ public class ManagerController {
         }
     }
 
+    private void displayMenu() {
+        try {
+            // Build the connection
+            Class.forName("org.postgresql.Driver");
+            Connection conn = DriverManager.getConnection(DB_URL, my.user, my.pswd);
 
+            // Create statement
+            Statement stmt = conn.createStatement();
 
+            // Run sql query
+            String sqlStatement = "SELECT * FROM products ORDER BY product_id";
+            ResultSet rs = stmt.executeQuery(sqlStatement);
 
+            TableView<ProductRow> table = new TableView<>();
+            TableColumn<ProductRow, Integer> rsId = new TableColumn<>("ID");
+            TableColumn<ProductRow, String> rsName = new TableColumn<>("Name");
+            TableColumn<ProductRow, String> rsPrice = new TableColumn<>("Price");
+            rsId.setCellValueFactory(new PropertyValueFactory<>("productId"));
+            rsName.setCellValueFactory(new PropertyValueFactory<>("productName"));
+            rsPrice.setCellValueFactory(new PropertyValueFactory<>("productPrice"));
+            table.getColumns().addAll(rsId, rsName, rsPrice);
 
+            // output result
+            while (rs.next()) {
+                int product_id = rs.getInt("product_id");
+                String product_name = rs.getString("product_name");
+                String product_price = rs.getString("product_price");
 
+                table.getItems().add(new ProductRow(product_id, product_name, product_price));
+            }
+            
+            Stage owner = (Stage) employeeData.getScene().getWindow();
+            Stage dialog = new Stage();
+            dialog.setTitle("Menu");
+            // dialog.initOwner(owner);
+            dialog.initModality(Modality.NONE);
+            owner.setOnCloseRequest(e -> dialog.close());
+            dialog.setScene(new Scene(new BorderPane(table), 580, 420));
+            dialog.setResizable(true);
+            dialog.show();
+
+            // Close connection
+            rs.close();
+            stmt.close();
+            conn.close();
+
+        } catch (Exception e) {
+            System.out.println("Error with database.");
+            e.printStackTrace();
+            System.exit(0);
+        }
+    }
 }
