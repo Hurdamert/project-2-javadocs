@@ -13,7 +13,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Text?>
 
-<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.AppController">
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.AppController">
 
    <left>
       <StackPane prefHeight="150.0" prefWidth="200.0" BorderPane.alignment="CENTER">
@@ -45,7 +45,7 @@
       <VBox prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER">
          <children>
             <Label text="Order Details" VBox.vgrow="ALWAYS" />
-            <ListView fx:id="orderList" prefHeight="200.0" prefWidth="200.0" />
+            <ListView fx:id="orderList" prefWidth="200.0" />
             <Text fx:id="taxLabel" strokeType="OUTSIDE" strokeWidth="0.0" text="Tax: $0.00" wrappingWidth="96.341796875" />
             <Text fx:id="totalLabel" strokeType="OUTSIDE" strokeWidth="0.0" text="Total: $0.00" wrappingWidth="96.341796875" />
             <Button fx:id="chargeButton" mnemonicParsing="false" text="Charge" VBox.vgrow="ALWAYS" />

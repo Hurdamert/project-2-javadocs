@@ -261,6 +261,16 @@ public class AppController {
     private void createNeworder() {
         System.out.println("Creating a new order...");
 
+        // Cleaning up viewable elements
+        orderItems.clear();
+
+        // Resetting the current total
+        currentSubTotal = 0.00;
+        updateTotalAndTax();
+
+        // clearing the ListView
+        observableOrderItems.clear();
+
         getCategories();
     }
 
@@ -281,9 +291,97 @@ public class AppController {
     }
 
     private void checkOutOrder() {
-        System.out.println("Checked out yo!");
-        currentSubTotal = 0;
+        // creating order in database
+        if (!orderItems.isEmpty()) {
+            // THIS WILL BE UPDATED ONCE CLOCK IN/OUT IS FUNCTIONAL
+            int employee_id = 6;
+            try {
+                Class.forName("org.postgresql.Driver");
+                Connection conn = DriverManager.getConnection(DB_URL, my.user, my.pswd);
+                conn.setAutoCommit(false);
+
+                Statement stmt0 = conn.createStatement();
+                ResultSet rs0 = stmt0.executeQuery("SELECT * FROM ingredients WHERE ingredient_name = 'Water'");
+                int water_id = -1;
+                if (rs0.next()) {
+                    water_id = rs0.getInt("ingredient_id");
+                }
+
+                Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery("INSERT INTO orders (employee_id, sub_total) VALUES (" + employee_id + ", " + currentSubTotal + ") RETURNING order_id;");
+                if (rs.next()) {
+                    // successfully created order
+                    int order_id = rs.getInt("order_id");
+                    
+                    // now add all order items into the order
+                    for (OrderItem item : orderItems) {
+                        // first take out ingredient quantities from inventory
+                        try {
+                            Statement stmt2 = conn.createStatement();
+                            ResultSet rs2 = stmt2.executeQuery("SELECT * FROM productingredients WHERE product_id = " + item.getProduct_id());
+
+                            while (rs2.next()) {
+                                // remove qty from ingredient_id
+                                int ingredient_id = rs2.getInt("ingredient_id");
+                                int ingredient_amount = rs2.getInt("ingredient_amount") * item.getItem_count();
+
+                                // if using water, don't take from inventory (assuming infinite)
+                                if (ingredient_id == water_id) {
+                                    continue;
+                                }
+
+                                try {
+                                    Statement stmt3 = conn.createStatement();
+                                    int linesChanged = stmt3.executeUpdate("UPDATE ingredients SET quantity = quantity - " + ingredient_amount + " WHERE ingredient_id = " + ingredient_id);
+                                    if (linesChanged != 1) {
+                                        System.out.println("Error changing ingredient quantity.");
+                                    }
+                                    stmt3.close();
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            }
+
+                            rs2.close();
+                            stmt2.close();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+
+                        // create orderitem connected to order
+                        try {
+                            Statement stmt4 = conn.createStatement();
+                            int linesChanged = stmt4.executeUpdate("INSERT INTO orderitems (order_id, product_id, qty, item_price) VALUES (" + order_id + ", " + item.getProduct_id() + ", " + item.getItem_count() + ", " + item.getItem_price() + ");");
+                            if (linesChanged != 1) {
+                                System.out.println("Error inserting new OrderItem.");
+                            }
+                            stmt4.close();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+
+                // everything went properly so now committing to database
+                conn.commit();
+
+                rs.close();
+                stmt.close();
+                conn.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        // Finishing up and cleaning up viewable elements
+        orderItems.clear();
+
+        // Resetting the current total
+        currentSubTotal = 0.00;
         updateTotalAndTax();
+
+        // clearing the ListView
+        observableOrderItems.clear();
 
         // go back to the main menu
         getCategories();
@@ -367,18 +465,18 @@ public class AppController {
     }
 
     private HBox createQuantitySelector(IntegerProperty quantity) {
-    Button plus = new Button("+");
-    Button minus = new Button("-");
-    Label quantityLabel = new Label();
-    quantityLabel.textProperty().bind(quantity.asString());
+        Button plus = new Button("+");
+        Button minus = new Button("-");
+        Label quantityLabel = new Label();
+        quantityLabel.textProperty().bind(quantity.asString());
 
-    plus.setOnAction(e -> quantity.set(quantity.get() + 1));
-    minus.setOnAction(e -> {
-        if (quantity.get() > 1) quantity.set(quantity.get() - 1);
-    });
+        plus.setOnAction(e -> quantity.set(quantity.get() + 1));
+        minus.setOnAction(e -> {
+            if (quantity.get() > 1) quantity.set(quantity.get() - 1);
+        });
 
-    HBox box = new HBox(5, minus, quantityLabel, plus);
-    box.setAlignment(Pos.CENTER);
-    return box;
-}
+        HBox box = new HBox(5, minus, quantityLabel, plus);
+        box.setAlignment(Pos.CENTER);
+        return box;
+    }
 }
