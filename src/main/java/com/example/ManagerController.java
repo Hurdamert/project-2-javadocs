@@ -64,7 +64,10 @@ public class ManagerController {
     @FXML
     private BottomNavigationButton saleHistory; 
 
-    // --- DB config (re-use your existing dbSetup)
+    // Ensure we only have one employee page
+    private Stage employeeStage;
+
+    // --- DB config
     private static final String DB_URL = "jdbc:postgresql://csce-315-db.engr.tamu.edu/gang_00_db";
     private final dbSetup my = new dbSetup();
 
@@ -101,57 +104,24 @@ public class ManagerController {
     @FXML
     private void showEmployeesData() {
         try {
-            // Build the connection
-            Class.forName("org.postgresql.Driver");
-            Connection conn = DriverManager.getConnection(DB_URL, my.user, my.pswd);
+            if(employeeStage == null){
+                Stage owner = (Stage) employeeData.getScene().getWindow();
+                javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/com/example/Employee_data.fxml"));
+                javafx.scene.Parent root = loader.load();
 
-            // Create statement
-            Statement stmt = conn.createStatement();
-
-            // Run sql query
-            String sqlStatement = "SELECT * FROM employees ORDER BY employee_id";
-            ResultSet rs = stmt.executeQuery(sqlStatement);
-
-            TableView<EmployeeRow> table = new TableView<>();
-            TableColumn<EmployeeRow, Integer> rsId = new TableColumn<>("ID");
-            TableColumn<EmployeeRow, String> rsName = new TableColumn<>("Name");
-            TableColumn<EmployeeRow, String> rsRole = new TableColumn<>("Role");
-            TableColumn<EmployeeRow, String> rsStatus = new TableColumn<>("Status");
-            rsId.setCellValueFactory(new PropertyValueFactory<>("employeeId"));
-            rsName.setCellValueFactory(new PropertyValueFactory<>("employeeName"));
-            rsRole.setCellValueFactory(new PropertyValueFactory<>("role"));
-            rsStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
-            table.getColumns().addAll(rsId, rsName, rsRole, rsStatus);
-
-            // output result
-            while (rs.next()) {
-                int employee_id = rs.getInt("employee_id");
-                String employee_name = rs.getString("employee_name");
-                String employee_role = rs.getString("role");
-                String status = rs.getString("status");
-
-                table.getItems().add(new EmployeeRow(employee_id, employee_name, employee_role, status));
+                employeeStage = new Stage();
+                employeeStage.setTitle("Employee");
+                employeeStage.initOwner(owner);
+                employeeStage.initModality(Modality.WINDOW_MODAL);
+                employeeStage.setResizable(true);
+                employeeStage.setScene(new Scene(root, 900, 530));
+                employeeStage.show();
             }
+            employeeStage.show();
+            employeeStage.toFront();
             
-            Stage owner = (Stage) employeeData.getScene().getWindow();
-            Stage dialog = new Stage();
-            dialog.setTitle("Employees");
-            // dialog.initOwner(owner);
-            dialog.initModality(Modality.NONE);
-            owner.setOnCloseRequest(e -> dialog.close());
-            dialog.setScene(new Scene(new BorderPane(table), 580, 420));
-            dialog.setResizable(true);
-            dialog.show();
-
-            // Close connection
-            rs.close();
-            stmt.close();
-            conn.close();
-
-        } catch (Exception e) {
-            System.out.println("Error with database.");
-            e.printStackTrace();
-            System.exit(0);
+        } catch (Exception ex) {
+            ex.printStackTrace();
         }
     }
 
