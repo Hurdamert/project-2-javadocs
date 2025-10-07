@@ -1,5 +1,6 @@
 package com.example;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -7,22 +8,24 @@ import java.sql.Statement;
 
 import com.gluonhq.charm.glisten.control.BottomNavigationButton;
 
-import javafx.beans.property.IntegerProperty;
-import javafx.beans.property.SimpleIntegerProperty;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.geometry.Pos;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.AnchorPane;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.TilePane;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
+import javafx.scene.control.ListView;
 
 public class AppController {
 
@@ -41,25 +44,23 @@ public class AppController {
     private AnchorPane centerAnchorPane;
 
     // Bottom nav
-    @FXML private BottomNavigationButton checkOut;
-    @FXML private BottomNavigationButton transactions;
-    @FXML private BottomNavigationButton clockInOut;
-    @FXML private BottomNavigationButton more;
+    @FXML
+    private BottomNavigationButton checkOut;
+    @FXML
+    private BottomNavigationButton transactions;
+    @FXML
+    private BottomNavigationButton clockInOut;
+    @FXML
+    private BottomNavigationButton more;
 
-    @FXML private ListView<Products> orderList;
-    @FXML private Text totalLabel;
-    @FXML private Text taxLabel;
-
-    // Right Side
-    @FXML private Button chargeButton;
+    @FXML
+    private ListView<Products> orderList;
+    @FXML
+    private Text totalLabel;
 
     // Get database location and credentials
     private static final String DB_URL = "jdbc:postgresql://csce-315-db.engr.tamu.edu/gang_00_db";
     private dbSetup my = new dbSetup();
-
-    private double currentSubTotal = 0;
-
-
 
     @FXML
     private void initialize() {
@@ -72,7 +73,6 @@ public class AppController {
         transactions.setOnAction(e -> openTransaction());
         clockInOut.setOnAction(e -> clockIn_Out());
         more.setOnAction(e -> showMore());
-        chargeButton.setOnAction(e -> checkOutOrder());
     }
 
     private void getCategories() {
@@ -189,15 +189,9 @@ public class AppController {
 
                 Text productText = new Text(product_name);
                 productText.setStyle("-fx-font-weight: bold; -fx-font-size: 30px;");
-                Text productPrice = new Text("Item Price: $" + product_price);
+                Text productPrice = new Text("Current Price: $" + product_price);
                 productPrice.setStyle("-fx-font-size: 20px;");
-
-                IntegerProperty quantity = new SimpleIntegerProperty(1);
-                HBox quantitySelector = createQuantitySelector(quantity);
-                int product_quantity = quantity.get();
-
                 Button orderButton = new Button("Add to order");
-                orderButton.setOnAction(e -> addItemToOrder(product_price));
                 productInfo.getChildren().addAll(productText, productPrice, orderButton);
                 productPane.getChildren().add(productInfo);
                 productPane.setStyle("-fx-padding: 20px 10 0 0;");
@@ -271,26 +265,6 @@ public class AppController {
         System.out.println("More information...");
     }
 
-    private void checkOutOrder() {
-        System.out.println("Checked out yo!");
-        currentSubTotal = 0;
-        updateTotalAndTax();
-
-        // go back to the main menu
-        getCategories();
-    }
-
-    private void addItemToOrder(double priceToAddToTotal){
-        System.out.println("Item added!");
-        currentSubTotal += priceToAddToTotal;
-        updateTotalAndTax();
-    }
-
-    private void updateTotalAndTax(){
-        totalLabel.setText(String.format("Total: $%.2f", currentSubTotal));
-        taxLabel.setText(String.format("Tax: $%.2f", currentSubTotal * 0.05));
-    }
-
     // Creates a reusable category card
     private VBox createCategoryCard(String category_name, int category_id) {
         VBox card = new VBox(5);
@@ -300,10 +274,10 @@ public class AppController {
 
         Text text = new Text(category_name);
         text.setStyle("-fx-font-weight: bold;");
-        //javafx.scene.control.Button button = new javafx.scene.control.Button("Select");
-        card.setOnMouseClicked(e -> showProducts(category_id));
+        javafx.scene.control.Button button = new javafx.scene.control.Button("Select");
+        button.setOnAction(e -> showProducts(category_id));
 
-        card.getChildren().addAll(text);
+        card.getChildren().addAll(text, button);
         return card;
     }
 
@@ -316,10 +290,10 @@ public class AppController {
 
         Text text = new Text(product_name);
         text.setStyle("-fx-font-weight: bold;");
-        //javafx.scene.control.Button button = new javafx.scene.control.Button("Select");
-        card.setOnMouseClicked(e -> getProduct(product_id, category_id));
+        javafx.scene.control.Button button = new javafx.scene.control.Button("Select");
+        button.setOnAction(e -> getProduct(product_id, category_id));
 
-        card.getChildren().addAll(text);
+        card.getChildren().addAll(text, button);
         return card;
     }
 
@@ -334,36 +308,9 @@ public class AppController {
         name.setStyle("-fx-font-weight: bold;");
         Text price = new Text("Add-on Price: $" + addon_price);
         javafx.scene.control.Button button = new javafx.scene.control.Button("Add");
-        button.setOnMouseClicked(
-            //e -> getProduct(product_id, category_id)
-            e -> System.out.println("Addon item clicked")
-            );
+        // button.setOnAction(e -> getProduct(product_id, category_id));
 
         card.getChildren().addAll(name, price, button);
         return card;
-    }
-
-    public static HBox createQuantitySelector(IntegerProperty quantity) {
-        Button minusButton = new Button("-");
-        Button plusButton = new Button("+");
-        Label quantityLabel = new Label();
-        quantityLabel.textProperty().bind(quantity.asString());
-
-        // Set button actions
-        minusButton.setOnAction(e -> {
-            if (quantity.get() > 1) {
-                quantity.set(quantity.get() - 1);
-            }
-        });
-
-        plusButton.setOnAction(e -> {
-            quantity.set(quantity.get() + 1);
-        });
-
-        HBox box = new HBox(5); // spacing between buttons and label
-        box.setAlignment(Pos.CENTER);
-        box.getChildren().addAll(minusButton, quantityLabel, plusButton);
-
-        return box;
     }
 }
