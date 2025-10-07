@@ -300,6 +300,7 @@ public class ManagerController {
         }
     }
 
+    @FXML
     private void displayMenu() {
         try {
             // Build the connection
@@ -310,9 +311,9 @@ public class ManagerController {
             Statement stmt = conn.createStatement();
 
             // Run sql query
-            String sqlStatement = "SELECT * FROM products ORDER BY product_id";
-            ResultSet rs = stmt.executeQuery(sqlStatement);
-
+            String productSQLStatement = "SELECT * FROM products ORDER BY product_id";
+            ResultSet rs = stmt.executeQuery(productSQLStatement);
+            
             TableView<ProductRow> table = new TableView<>();
             TableColumn<ProductRow, Integer> rsId = new TableColumn<>("ID");
             TableColumn<ProductRow, String> rsName = new TableColumn<>("Name");
@@ -330,6 +331,7 @@ public class ManagerController {
 
                 table.getItems().add(new ProductRow(product_id, product_name, product_price));
             }
+
             
             Stage owner = (Stage) employeeData.getScene().getWindow();
             Stage dialog = new Stage();
