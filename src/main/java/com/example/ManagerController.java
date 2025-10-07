@@ -48,10 +48,11 @@ public class ManagerController {
     @FXML
     private BottomNavigationButton employeeData;
     @FXML
-    private BottomNavigationButton saleHistory; 
+    private BottomNavigationButton report; 
 
     // Ensure we only have one employee page
     private Stage employeeStage;
+    private Stage reportStage;
 
     // --- DB config
     private static final String DB_URL = "jdbc:postgresql://csce-315-db.engr.tamu.edu/gang_00_db";
@@ -78,6 +79,7 @@ public class ManagerController {
         refreshChart();
 
         employeeData.setOnAction(e -> showEmployeesData());
+        report.setOnAction(e -> showReport());
     }
 
     @FXML
@@ -98,6 +100,29 @@ public class ManagerController {
             }
             employeeStage.show();
             employeeStage.toFront();
+            
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private void showReport() {
+        try {
+            if(reportStage == null){
+                Stage owner = (Stage) report.getScene().getWindow();
+                javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/com/example/Report.fxml"));
+                javafx.scene.Parent root = loader.load();
+
+                reportStage = new Stage();
+                reportStage.setTitle("Report");
+                reportStage.initOwner(owner);
+                reportStage.initModality(Modality.WINDOW_MODAL);
+                reportStage.setResizable(true);
+                reportStage.setScene(new Scene(root, 900, 530));
+                reportStage.show();
+            }
+            reportStage.show();
+            reportStage.toFront();
             
         } catch (Exception ex) {
             ex.printStackTrace();
