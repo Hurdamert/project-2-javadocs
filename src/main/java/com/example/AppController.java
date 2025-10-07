@@ -261,6 +261,16 @@ public class AppController {
     private void createNeworder() {
         System.out.println("Creating a new order...");
 
+        // Cleaning up viewable elements
+        orderItems.clear();
+
+        // Resetting the current total
+        currentSubTotal = 0.00;
+        updateTotalAndTax();
+
+        // clearing the ListView
+        observableOrderItems.clear();
+
         getCategories();
     }
 
@@ -285,16 +295,13 @@ public class AppController {
         if (!orderItems.isEmpty()) {
             // THIS WILL BE UPDATED ONCE CLOCK IN/OUT IS FUNCTIONAL
             int employee_id = 6;
-
-
-            
             try {
                 Class.forName("org.postgresql.Driver");
                 Connection conn = DriverManager.getConnection(DB_URL, my.user, my.pswd);
                 conn.setAutoCommit(false);
 
                 Statement stmt0 = conn.createStatement();
-                ResultSet rs0 = stmt0.executeQuery("SELECT * FROM ingredients WHERE ingredient_name = Water");
+                ResultSet rs0 = stmt0.executeQuery("SELECT * FROM ingredients WHERE ingredient_name = 'Water'");
                 int water_id = -1;
                 if (rs0.next()) {
                     water_id = rs0.getInt("ingredient_id");
@@ -458,18 +465,18 @@ public class AppController {
     }
 
     private HBox createQuantitySelector(IntegerProperty quantity) {
-    Button plus = new Button("+");
-    Button minus = new Button("-");
-    Label quantityLabel = new Label();
-    quantityLabel.textProperty().bind(quantity.asString());
+        Button plus = new Button("+");
+        Button minus = new Button("-");
+        Label quantityLabel = new Label();
+        quantityLabel.textProperty().bind(quantity.asString());
 
-    plus.setOnAction(e -> quantity.set(quantity.get() + 1));
-    minus.setOnAction(e -> {
-        if (quantity.get() > 1) quantity.set(quantity.get() - 1);
-    });
+        plus.setOnAction(e -> quantity.set(quantity.get() + 1));
+        minus.setOnAction(e -> {
+            if (quantity.get() > 1) quantity.set(quantity.get() - 1);
+        });
 
-    HBox box = new HBox(5, minus, quantityLabel, plus);
-    box.setAlignment(Pos.CENTER);
-    return box;
-}
+        HBox box = new HBox(5, minus, quantityLabel, plus);
+        box.setAlignment(Pos.CENTER);
+        return box;
+    }
 }
