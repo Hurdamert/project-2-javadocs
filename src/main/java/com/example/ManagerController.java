@@ -21,12 +21,6 @@ import com.gluonhq.charm.glisten.control.BottomNavigationButton;
 
 public class ManagerController {
 
-    private static final String TBL_INVENTORY = "ingredients";
-    private static final String COL_ID = "ingredient_id";
-    private static final String COL_NAME = "ingredient_name";
-    private static final String COL_QTY = "quantity";
-    // -------------------------------------------------------------------------
-
     // --- FXML refs (from ManagerPage.fxml)
     @FXML
     private TableView<InventoryItem> inventoryTable;
@@ -45,12 +39,16 @@ public class ManagerController {
     @FXML
     private BarChart<String, Number> supplyChart;
 
+    // Bottom nav
+    @FXML private BottomNavigationButton displayMenu;
+
+
     @FXML
     private BottomNavigationButton employeeData;
     @FXML
     private BottomNavigationButton saleHistory; 
 
-    // --- DB config
+    // --- DB config (re-use your existing dbSetup)
     private static final String DB_URL = "jdbc:postgresql://csce-315-db.engr.tamu.edu/gang_00_db";
     private final dbSetup my = new dbSetup();
 
@@ -61,20 +59,23 @@ public class ManagerController {
         // Table column bindings
         colItem.setCellValueFactory(new PropertyValueFactory<>("name"));
         colStock.setCellValueFactory(new PropertyValueFactory<>("qty"));
+
         inventoryTable.setItems(inventory);
 
         // When selecting a row, populate the form (for update)
-        inventoryTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, sel) -> {
+        inventoryTable.getSelectionModel().selectedItemProperty().addListener((obs, old, sel) -> {
             if (sel != null) {
                 nameField.setText(sel.getName());
                 qtyField.setText(String.valueOf(sel.getQty()));
             }
         });
 
+        // Load data + chart
         refreshInventory();
         refreshChart();
 
         employeeData.setOnAction(e -> showEmployeesData());
+        displayMenu.setOnAction(e -> displayMenu());
     }
 
     @FXML
@@ -140,12 +141,10 @@ public class ManagerController {
     private void onAddInventory() {
         String name = nameField.getText().trim();
         String qtyStr = qtyField.getText().trim();
-
         if (name.isBlank() || qtyStr.isBlank()) {
             status("Enter name and quantity.");
             return;
         }
-
         int qty;
         try {
             qty = Integer.parseInt(qtyStr);
@@ -154,16 +153,13 @@ public class ManagerController {
             return;
         }
 
-        String sqlAdd = String.format(
-                "INSERT INTO %s (%s, %s) VALUES (?, ?)",
-                TBL_INVENTORY, COL_NAME, COL_QTY);
+        String sql = "INSERT INTO inventory (item_name, quantity) VALUES (?, ?)";
 
         try (Connection conn = DriverManager.getConnection(DB_URL, my.user, my.pswd);
-                PreparedStatement ps = conn.prepareStatement(sqlAdd)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, name);
             ps.setInt(2, qty);
             ps.executeUpdate();
-
             status("Added: " + name + " (" + qty + ")");
             clearForm();
             refreshInventory();
@@ -181,14 +177,12 @@ public class ManagerController {
             status("Select a row to update.");
             return;
         }
-
         String name = nameField.getText().trim();
         String qtyStr = qtyField.getText().trim();
         if (name.isBlank() || qtyStr.isBlank()) {
             status("Enter name and quantity.");
             return;
         }
-
         int qty;
         try {
             qty = Integer.parseInt(qtyStr);
@@ -197,27 +191,25 @@ public class ManagerController {
             return;
         }
 
-        try (Connection conn = DriverManager.getConnection(DB_URL, my.user, my.pswd)) {
+        // Prefer updating by a stable ID column if you have one (inventory_id). Example
+        // shown:
+        String sql = "UPDATE inventory SET item_name = ?, quantity = ? WHERE inventory_id = ?";
 
-            if (COL_ID != null && sel.getId() != null) {
-                // Update by ID (preferred)
-                String sqlUpdateById = String.format(
-                        "UPDATE %s SET %s = ?, %s = ? WHERE %s = ?",
-                        TBL_INVENTORY, COL_NAME, COL_QTY, COL_ID);
-                try (PreparedStatement ps = conn.prepareStatement(sqlUpdateById)) {
-                    ps.setString(1, name);
-                    ps.setInt(2, qty);
-                    ps.setInt(3, sel.getId());
+        try (Connection conn = DriverManager.getConnection(DB_URL, my.user, my.pswd)) {
+            Integer id = sel.getId();
+
+            if (id == null) {
+                try (PreparedStatement ps = conn
+                        .prepareStatement("UPDATE inventory SET quantity = ? WHERE item_name = ?")) {
+                    ps.setInt(1, qty);
+                    ps.setString(2, sel.getName());
                     ps.executeUpdate();
                 }
             } else {
-                // Fallback: update by name
-                String sqlUpdateByName = String.format(
-                        "UPDATE %s SET %s = ? WHERE %s = ?",
-                        TBL_INVENTORY, COL_QTY, COL_NAME);
-                try (PreparedStatement ps = conn.prepareStatement(sqlUpdateByName)) {
-                    ps.setInt(1, qty);
-                    ps.setString(2, sel.getName());
+                try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                    ps.setString(1, name);
+                    ps.setInt(2, qty);
+                    ps.setInt(3, id);
                     ps.executeUpdate();
                 }
             }
@@ -226,7 +218,6 @@ public class ManagerController {
             clearForm();
             refreshInventory();
             refreshChart();
-
         } catch (Exception ex) {
             ex.printStackTrace();
             status("Update failed: " + ex.getMessage());
@@ -238,29 +229,17 @@ public class ManagerController {
     private void refreshInventory() {
         inventory.clear();
 
-        // Build SELECT with or without ID
-        final String selectCols = (COL_ID != null)
-                ? String.format("%s, %s, %s", COL_ID, COL_NAME, COL_QTY)
-                : String.format("%s, %s", COL_NAME, COL_QTY);
-
-        String sqlLoad = String.format(
-                "SELECT %s FROM %s ORDER BY %s",
-                selectCols, TBL_INVENTORY, COL_NAME);
+        // Adjust columns to match your schema
+        String sql = "SELECT inventory_id, item_name, quantity FROM inventory ORDER BY item_name";
 
         try (Connection conn = DriverManager.getConnection(DB_URL, my.user, my.pswd);
                 Statement st = conn.createStatement();
-                ResultSet rs = st.executeQuery(sqlLoad)) {
+                ResultSet rs = st.executeQuery(sql)) {
 
             while (rs.next()) {
-                Integer id = null;
-                int colShift = 0;
-                if (COL_ID != null) {
-                    id = (Integer) rs.getObject(1);
-                    colShift = 1;
-                }
-                String name = rs.getString(1 + colShift);
-                int qty = rs.getInt(2 + colShift);
-
+                Integer id = (Integer) rs.getObject("inventory_id"); // nullable if no id column
+                String name = rs.getString("item_name");
+                int qty = rs.getInt("quantity");
                 inventory.add(new InventoryItem(id, name, qty));
             }
         } catch (Exception ex) {
@@ -321,9 +300,56 @@ public class ManagerController {
         }
     }
 
+    private void displayMenu() {
+        try {
+            // Build the connection
+            Class.forName("org.postgresql.Driver");
+            Connection conn = DriverManager.getConnection(DB_URL, my.user, my.pswd);
 
+            // Create statement
+            Statement stmt = conn.createStatement();
 
+            // Run sql query
+            String sqlStatement = "SELECT * FROM products ORDER BY product_id";
+            ResultSet rs = stmt.executeQuery(sqlStatement);
 
+            TableView<ProductRow> table = new TableView<>();
+            TableColumn<ProductRow, Integer> rsId = new TableColumn<>("ID");
+            TableColumn<ProductRow, String> rsName = new TableColumn<>("Name");
+            TableColumn<ProductRow, String> rsPrice = new TableColumn<>("Price");
+            rsId.setCellValueFactory(new PropertyValueFactory<>("productId"));
+            rsName.setCellValueFactory(new PropertyValueFactory<>("productName"));
+            rsPrice.setCellValueFactory(new PropertyValueFactory<>("productPrice"));
+            table.getColumns().addAll(rsId, rsName, rsPrice);
 
+            // output result
+            while (rs.next()) {
+                int product_id = rs.getInt("product_id");
+                String product_name = rs.getString("product_name");
+                String product_price = rs.getString("product_price");
 
+                table.getItems().add(new ProductRow(product_id, product_name, product_price));
+            }
+            
+            Stage owner = (Stage) employeeData.getScene().getWindow();
+            Stage dialog = new Stage();
+            dialog.setTitle("Menu");
+            // dialog.initOwner(owner);
+            dialog.initModality(Modality.NONE);
+            owner.setOnCloseRequest(e -> dialog.close());
+            dialog.setScene(new Scene(new BorderPane(table), 580, 420));
+            dialog.setResizable(true);
+            dialog.show();
+
+            // Close connection
+            rs.close();
+            stmt.close();
+            conn.close();
+
+        } catch (Exception e) {
+            System.out.println("Error with database.");
+            e.printStackTrace();
+            System.exit(0);
+        }
+    }
 }
