@@ -82,7 +82,6 @@ public class EmployeeController {
         } catch (Throwable ex) {
             ex.printStackTrace();
         } finally {
-            // 回到 UI 线程收尾 / 更新
             Platform.runLater(() -> {
                 try { 
                     if (uiAfter != null) uiAfter.run(); 
