@@ -185,18 +185,12 @@ public class MenuController {
                 PreparedStatement stmt2 = conn.prepareStatement(sqlStatement2);
                 stmt2.setInt(1, dele.getProductId());
 
-                // Delete from orderitems
-                String sqlStatement3 = "DELETE FROM orderitems WHERE product_id=?";
-                PreparedStatement stmt3 = conn.prepareStatement(sqlStatement3);
-                stmt3.setInt(1, dele.getProductId());
-
                 // Run sql query
                 String sqlStatement = "DELETE FROM products WHERE product_id=?";
                 // Create statement
                 PreparedStatement stmt = conn.prepareStatement(sqlStatement);
                 stmt.setInt(1, dele.getProductId());
 
-                stmt3.executeUpdate(); // delete from order items
                 stmt2.executeUpdate(); // delete the product ingredients
                 stmt.executeUpdate(); // delete the data
 
