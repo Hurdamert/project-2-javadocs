@@ -33,6 +33,7 @@ public class MenuController {
 
     @FXML private TextField nameField;
     @FXML private TextField priceField;
+    @FXML private TextField categoryField;
 
     @FXML private Button addButton;
     @FXML private Button deleteButton;
@@ -136,13 +137,16 @@ public class MenuController {
         try {
             Class.forName("org.postgresql.Driver");
             Connection conn = DriverManager.getConnection(DB_URL, my.user, my.pswd);
+
+            // add to category
             
             // Run sql query
-            String sqlStatement = "INSERT INTO PRODUCTS (product_name, product_price) VALUES(?, ?)";
+            String sqlStatement = "INSERT INTO PRODUCTS (product_name, product_price, category_id) VALUES(?, ?, ?)";
             // Create statement
             PreparedStatement stmt = conn.prepareStatement(sqlStatement);
             stmt.setString(1, name);
             stmt.setFloat(2, price);
+            stmt.setInt(3, Integer.parseInt(categoryField.getText().trim()));
 
             stmt.executeUpdate(); // add the data
 
@@ -157,6 +161,7 @@ public class MenuController {
 
             nameField.clear();
             priceField.clear();
+            categoryField.clear();
             table.getSelectionModel().clearSelection();
             
             loadData(); // query
@@ -174,13 +179,25 @@ public class MenuController {
             try {
                 Class.forName("org.postgresql.Driver");
                 Connection conn = DriverManager.getConnection(DB_URL, my.user, my.pswd);
-                
+
+                // Delete product ingredients
+                String sqlStatement2 = "DELETE FROM productingredients WHERE product_id=?";
+                PreparedStatement stmt2 = conn.prepareStatement(sqlStatement2);
+                stmt2.setInt(1, dele.getProductId());
+
+                // Delete from orderitems
+                String sqlStatement3 = "DELETE FROM orderitems WHERE product_id=?";
+                PreparedStatement stmt3 = conn.prepareStatement(sqlStatement3);
+                stmt3.setInt(1, dele.getProductId());
+
                 // Run sql query
                 String sqlStatement = "DELETE FROM products WHERE product_id=?";
                 // Create statement
                 PreparedStatement stmt = conn.prepareStatement(sqlStatement);
                 stmt.setInt(1, dele.getProductId());
 
+                stmt3.executeUpdate(); // delete from order items
+                stmt2.executeUpdate(); // delete the product ingredients
                 stmt.executeUpdate(); // delete the data
 
                 conn.close();
