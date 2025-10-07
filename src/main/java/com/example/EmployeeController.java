@@ -69,6 +69,7 @@ public class EmployeeController {
 
     }
 
+    // Use this to finsih the Async function
     private void runAsync(Runnable ioWork, Runnable uiAfter) {
     // Disable button, avoid to click the button for multiple times(will cause program crashed)
     addButton.setDisable(true);
