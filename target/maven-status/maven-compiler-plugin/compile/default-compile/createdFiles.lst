@@ -1,6 +1,7 @@
-com\example\EmployeeRow.class
-com\example\App.class
-com\example\AppController.class
+com\example\MainView.fxml
+com\example\Employee_data.fxml
+com\example\ManagerPage.fxml
+com\example\OrderItem.class
 com\example\ManagerController$InventoryItem.class
 com\example\ManagerController.class
 com\example\Products.class
