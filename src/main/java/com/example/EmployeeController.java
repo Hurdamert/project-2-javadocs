@@ -69,41 +69,41 @@ public class EmployeeController {
 
     }
 
+    //TEST USE
     // Use this to finsih the Async function
-    private void runAsync(Runnable ioWork, Runnable uiAfter) {
-    // Disable button, avoid to click the button for multiple times(will cause program crashed)
-    addButton.setDisable(true);
-    deleteButton.setDisable(true);
-    modifyButton.setDisable(true);
-    table.setDisable(true);
-    Thread t = new Thread(() -> {
-        try {
-            ioWork.run();
-        } catch (Throwable ex) {
-            ex.printStackTrace();
-        } finally {
-            Platform.runLater(() -> {
-                try { 
-                    if (uiAfter != null) uiAfter.run(); 
-                }
-                finally {    
-                    addButton.setDisable(false);
-                    deleteButton.setDisable(false);
-                    modifyButton.setDisable(false);
-                    table.setDisable(false); 
-                }
-            });
-        }
-    });
-    t.setDaemon(true);
-    t.start();
-}
+//     private void runAsync(Runnable ioWork, Runnable uiAfter) {
+//     // Disable button, avoid to click the button for multiple times(will cause program crashed)
+//     addButton.setDisable(true);
+//     deleteButton.setDisable(true);
+//     modifyButton.setDisable(true);
+//     table.setDisable(true);
+//     Thread t = new Thread(() -> {
+//         try {
+//             ioWork.run();
+//         } catch (Throwable ex) {
+//             ex.printStackTrace();
+//         } finally {
+//             Platform.runLater(() -> {
+//                 try { 
+//                     if (uiAfter != null) uiAfter.run(); 
+//                 }
+//                 finally {    
+//                     addButton.setDisable(false);
+//                     deleteButton.setDisable(false);
+//                     modifyButton.setDisable(false);
+//                     table.setDisable(false); 
+//                 }
+//             });
+//         }
+//     });
+//     t.setDaemon(true);
+//     t.start();
+// }
 
     private ObservableList<EmployeeRow> tempHub = FXCollections.observableArrayList(); // store the data we fetch from database by using other thread, this should transfer itself to data_Collection
 
     private void loadData(){
          // Build the connection
-        runAsync(() -> {
         try {
             ObservableList<EmployeeRow> temp = FXCollections.observableArrayList(); // store the data we fetch from database by using other thread, this should transfer itself to data_Collection
             temp.clear();
@@ -128,9 +128,7 @@ public class EmployeeController {
             e.printStackTrace();
             e.getMessage();
         }
-        }, () -> {
-            data.setAll(tempHub);
-        });
+        data.setAll(tempHub);
 
     }
 
@@ -139,7 +137,6 @@ public class EmployeeController {
         String role = roleField.getText().trim();
         String status = statusField.getText().trim();
 
-        runAsync(() -> {
         try {
             Class.forName("org.postgresql.Driver");
             Connection conn = DriverManager.getConnection(DB_URL, my.user, my.pswd);
@@ -155,21 +152,18 @@ public class EmployeeController {
             stmt.executeUpdate(); // add the data
 
             conn.close();
-        }
-        catch (Exception e) {
-            // TODO: handle exception
-            e.printStackTrace();
-            e.getMessage();
-        }
-        }, () -> {
-
             nameField.clear();
             roleField.clear();
             statusField.clear();
             table.getSelectionModel().clearSelection();
             
             loadData(); // query
-        });
+        }
+        catch (Exception e) {
+            // TODO: handle exception
+            e.printStackTrace();
+            e.getMessage();
+        }
         
     }
 
@@ -179,34 +173,31 @@ public class EmployeeController {
             System.out.println("You should select a row");
         }
 
-        runAsync(() -> {
-            try {
-                Class.forName("org.postgresql.Driver");
-                Connection conn = DriverManager.getConnection(DB_URL, my.user, my.pswd);
-                
-                // Run sql query
-                String sqlStatement = "DELETE FROM EMPLOYEES WHERE employee_id=?";
-                // Create statement
-                PreparedStatement stmt = conn.prepareStatement(sqlStatement);
-                stmt.setInt(1, dele.getEmployeeId());
+        try {
+            Class.forName("org.postgresql.Driver");
+            Connection conn = DriverManager.getConnection(DB_URL, my.user, my.pswd);
+            
+            // Run sql query
+            String sqlStatement = "DELETE FROM EMPLOYEES WHERE employee_id=?";
+            // Create statement
+            PreparedStatement stmt = conn.prepareStatement(sqlStatement);
+            stmt.setInt(1, dele.getEmployeeId());
 
-                stmt.executeUpdate(); // delete the data
+            stmt.executeUpdate(); // delete the data
 
-                conn.close();
-
-            } catch (Exception e) {
-                // TODO: handle exception
-                e.printStackTrace();
-                e.getMessage();
-            }
-        }, () -> {
+            conn.close();
             nameField.clear();
             roleField.clear();
             statusField.clear();
             table.getSelectionModel().clearSelection();
-
+            
             loadData(); // query
-        });
+
+        } catch (Exception e) {
+            // TODO: handle exception
+            e.printStackTrace();
+            e.getMessage();
+        }
 
     }
 
@@ -216,37 +207,34 @@ public class EmployeeController {
         String status = statusField.getText().trim();
         EmployeeRow updateRow = table.getSelectionModel().getSelectedItem();
 
-        runAsync(() -> {
-            try {
-                Class.forName("org.postgresql.Driver");
-                Connection conn = DriverManager.getConnection(DB_URL, my.user, my.pswd);
-                
-                // Run sql query
-                String sqlStatement = "UPDATE EMPLOYEES SET employee_name = ?, \"role\" = ?, status = ? WHERE employee_id = ?";
-                // Create statement
-                PreparedStatement stmt = conn.prepareStatement(sqlStatement);
-                stmt.setString(1, name);
-                stmt.setString(2, role);
-                stmt.setString(3, status);
-                stmt.setInt(4,updateRow.getEmployeeId());
-    
-                stmt.executeUpdate(); // add the data
+        try {
+            Class.forName("org.postgresql.Driver");
+            Connection conn = DriverManager.getConnection(DB_URL, my.user, my.pswd);
+            
+            // Run sql query
+            String sqlStatement = "UPDATE EMPLOYEES SET employee_name = ?, \"role\" = ?, status = ? WHERE employee_id = ?";
+            // Create statement
+            PreparedStatement stmt = conn.prepareStatement(sqlStatement);
+            stmt.setString(1, name);
+            stmt.setString(2, role);
+            stmt.setString(3, status);
+            stmt.setInt(4,updateRow.getEmployeeId());
 
-                conn.close();
-    
-            } catch (Exception e) {
-                // TODO: handle exception
-                e.printStackTrace();
-                e.getMessage();
-            }
-        }, () -> {
+            stmt.executeUpdate(); // add the data
+
+            conn.close();
             nameField.clear();
             roleField.clear();
             statusField.clear();
             table.getSelectionModel().clearSelection();
-
+            
             loadData(); // query
-        });
+
+        } catch (Exception e) {
+            // TODO: handle exception
+            e.printStackTrace();
+            e.getMessage();
+        }
         
     }
 
