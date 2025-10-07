@@ -11,6 +11,8 @@ import javafx.scene.control.cell.PropertyValueFactory;
 
 import java.sql.*;
 
+import com.gluonhq.charm.glisten.control.BottomNavigationButton;
+
 public class ManagerController {
 
     private static final String TBL_INVENTORY = "ingredients";
@@ -37,6 +39,10 @@ public class ManagerController {
     @FXML
     private BarChart<String, Number> supplyChart;
 
+    // Bottom nav
+    @FXML private BottomNavigationButton displayMenu;
+
+
     // --- DB config
     private static final String DB_URL = "jdbc:postgresql://csce-315-db.engr.tamu.edu/gang_00_db";
     private final dbSetup my = new dbSetup();
@@ -60,6 +66,8 @@ public class ManagerController {
 
         refreshInventory();
         refreshChart();
+
+        displayMenu.setOnAction(e -> displayMenu());
     }
 
     // --- UI actions
@@ -246,6 +254,30 @@ public class ManagerController {
 
         public void setQty(int v) {
             qty.set(v);
+        }
+    }
+
+    private void displayMenu() {
+        String sql = "SELECT menu_id, menu_name, price FROM menu ORDER BY menu_name";
+
+        try (Connection conn = DriverManager.getConnection(DB_URL, my.user, my.pswd);
+            Statement stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery(sql)) {
+
+            System.out.println("Menu Items:");
+            while (rs.next()) {
+                int id = rs.getInt("menu_id");
+                String name = rs.getString("menu_name");
+                double price = rs.getDouble("price");
+
+                System.out.printf("ID: %d | Item: %s | Price: $%.2f%n", id, name, price);
+            }
+
+            status("Menu displayed in console.");
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            status("Failed to load menu: " + e.getMessage());
         }
     }
 }
