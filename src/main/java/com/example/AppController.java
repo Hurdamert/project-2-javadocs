@@ -54,7 +54,6 @@ public class AppController {
     @FXML private Text totalLabel;
     @FXML private Text taxLabel;
 
-    // Right Side
     @FXML private Button chargeButton;
 
     // Get database location and credentials
@@ -196,7 +195,7 @@ public class AppController {
 
                 Text productText = new Text(product_name);
                 productText.setStyle("-fx-font-weight: bold; -fx-font-size: 30px;");
-                Text productPrice = new Text("Item Price: $" + product_price);
+                Text productPrice = new Text("Current Price: $" + product_price);
                 productPrice.setStyle("-fx-font-size: 20px;");
 
                 IntegerProperty quantity = new SimpleIntegerProperty(1);
@@ -367,27 +366,19 @@ public class AppController {
         return card;
     }
 
-    public static HBox createQuantitySelector(IntegerProperty quantity) {
-        Button minusButton = new Button("-");
-        Button plusButton = new Button("+");
-        Label quantityLabel = new Label();
-        quantityLabel.textProperty().bind(quantity.asString());
+    private HBox createQuantitySelector(IntegerProperty quantity) {
+    Button plus = new Button("+");
+    Button minus = new Button("-");
+    Label quantityLabel = new Label();
+    quantityLabel.textProperty().bind(quantity.asString());
 
-        // Set button actions
-        minusButton.setOnAction(e -> {
-            if (quantity.get() > 1) {
-                quantity.set(quantity.get() - 1);
-            }
-        });
+    plus.setOnAction(e -> quantity.set(quantity.get() + 1));
+    minus.setOnAction(e -> {
+        if (quantity.get() > 1) quantity.set(quantity.get() - 1);
+    });
 
-        plusButton.setOnAction(e -> {
-            quantity.set(quantity.get() + 1);
-        });
-
-        HBox box = new HBox(5); // spacing between buttons and label
-        box.setAlignment(Pos.CENTER);
-        box.getChildren().addAll(minusButton, quantityLabel, plusButton);
-
-        return box;
-    }
+    HBox box = new HBox(5, minus, quantityLabel, plus);
+    box.setAlignment(Pos.CENTER);
+    return box;
+}
 }
