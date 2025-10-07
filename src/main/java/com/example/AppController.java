@@ -30,28 +30,37 @@ import javafx.scene.control.ListView;
 public class AppController {
 
     // Left Side
-    @FXML private Button mainMenu;
-    @FXML private Button manager;
-    @FXML private Button newOrder;
+    @FXML
+    private Button mainMenu;
+    @FXML
+    private Button manager;
+    @FXML
+    private Button newOrder;
 
     // Center
-    @FXML private ScrollPane centerScrollPane;
-    @FXML private AnchorPane centerAnchorPane;
+    @FXML
+    private ScrollPane centerScrollPane;
+    @FXML
+    private AnchorPane centerAnchorPane;
 
     // Bottom nav
-    @FXML private BottomNavigationButton checkOut;
-    @FXML private BottomNavigationButton transactions;
-    @FXML private BottomNavigationButton clockInOut;
-    @FXML private BottomNavigationButton more;
+    @FXML
+    private BottomNavigationButton checkOut;
+    @FXML
+    private BottomNavigationButton transactions;
+    @FXML
+    private BottomNavigationButton clockInOut;
+    @FXML
+    private BottomNavigationButton more;
 
-    @FXML private ListView<Products> orderList;
-    @FXML private Label totalLabel;
-
+    @FXML
+    private ListView<Products> orderList;
+    @FXML
+    private Label totalLabel;
 
     // Get database location and credentials
     private static final String DB_URL = "jdbc:postgresql://csce-315-db.engr.tamu.edu/gang_00_db";
     private dbSetup my = new dbSetup();
-
 
     @FXML
     private void initialize() {
@@ -59,7 +68,7 @@ public class AppController {
         mainMenu.setOnAction(e -> getCategories());
         manager.setOnAction(e -> managerPage());
         newOrder.setOnAction(e -> createNeworder());
-        
+
         checkOut.setOnAction(e -> checkout());
         transactions.setOnAction(e -> openTransaction());
         clockInOut.setOnAction(e -> clockIn_Out());
@@ -169,7 +178,8 @@ public class AppController {
             Class.forName("org.postgresql.Driver");
             Connection conn = DriverManager.getConnection(DB_URL, my.user, my.pswd);
             Statement stmt1 = conn.createStatement();
-            ResultSet rs1 = stmt1.executeQuery("SELECT product_name, product_price FROM products WHERE product_id = " + product_id);
+            ResultSet rs1 = stmt1
+                    .executeQuery("SELECT product_name, product_price FROM products WHERE product_id = " + product_id);
 
             if (rs1.next()) {
                 String product_name = rs1.getString("product_name");
@@ -216,11 +226,20 @@ public class AppController {
     // This just a template window
     private void managerPage() {
         try {
-            Parent managerRoot = FXMLLoader.load(getClass().getResource("/com/example/MainView.fxml"));
-            manager.getScene().setRoot(managerRoot);
-        }
-        catch(IOException e) {
-            e.getMessage();
+            Stage owner = (Stage) manager.getScene().getWindow();
+            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(
+                    getClass().getResource("/com/example/ManagerPage.fxml"));
+            javafx.scene.Parent root = loader.load();
+
+            Stage dialog = new Stage();
+            dialog.setTitle("Manager");
+            dialog.initOwner(owner);
+            dialog.initModality(Modality.WINDOW_MODAL);
+            dialog.setResizable(true);
+            dialog.setScene(new Scene(root, 900, 530));
+            dialog.show();
+        } catch (Exception ex) {
+            ex.printStackTrace();
         }
     }
 
@@ -249,7 +268,8 @@ public class AppController {
     // Creates a reusable category card
     private VBox createCategoryCard(String category_name, int category_id) {
         VBox card = new VBox(5);
-        card.setStyle("-fx-border-color: black; -fx-border-radius: 5; -fx-background-color: #b9b9b9ff; -fx-background-radius: 5;");
+        card.setStyle(
+                "-fx-border-color: black; -fx-border-radius: 5; -fx-background-color: #b9b9b9ff; -fx-background-radius: 5;");
         card.setPadding(new javafx.geometry.Insets(10));
 
         Text text = new Text(category_name);
@@ -264,7 +284,8 @@ public class AppController {
     // Creates a reusable product card
     private VBox createProductCard(String product_name, int product_id, int category_id) {
         VBox card = new VBox(5);
-        card.setStyle("-fx-border-color: black; -fx-border-radius: 5; -fx-background-color: #b9b9b9ff; -fx-background-radius: 5;");
+        card.setStyle(
+                "-fx-border-color: black; -fx-border-radius: 5; -fx-background-color: #b9b9b9ff; -fx-background-radius: 5;");
         card.setPadding(new javafx.geometry.Insets(10));
 
         Text text = new Text(product_name);
@@ -279,14 +300,15 @@ public class AppController {
     // Creates a reusable addon card
     private VBox createAddonCard(String addon_name, double addon_price, int addon_id) {
         VBox card = new VBox(5);
-        card.setStyle("-fx-border-color: black; -fx-border-radius: 5; -fx-background-color: #b9b9b9ff; -fx-background-radius: 5;");
+        card.setStyle(
+                "-fx-border-color: black; -fx-border-radius: 5; -fx-background-color: #b9b9b9ff; -fx-background-radius: 5;");
         card.setPadding(new javafx.geometry.Insets(10));
 
         Text name = new Text(addon_name);
         name.setStyle("-fx-font-weight: bold;");
         Text price = new Text("Add-on Price: $" + addon_price);
         javafx.scene.control.Button button = new javafx.scene.control.Button("Add");
-        //button.setOnAction(e -> getProduct(product_id, category_id));
+        // button.setOnAction(e -> getProduct(product_id, category_id));
 
         card.getChildren().addAll(name, price, button);
         return card;

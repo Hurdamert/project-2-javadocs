@@ -1,3 +1,4 @@
 *.csv
 a.out
-target/
+target/postgresql-*.jar
+.vscode/
