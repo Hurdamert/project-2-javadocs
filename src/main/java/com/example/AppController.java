@@ -1,5 +1,6 @@
 package com.example;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -13,19 +14,23 @@ import javafx.beans.property.SimpleIntegerProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.geometry.Pos;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.AnchorPane;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.TilePane;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
+import javafx.scene.control.ListView;
 
 public class AppController {
 
@@ -54,8 +59,10 @@ public class AppController {
     @FXML private Text totalLabel;
     @FXML private Text taxLabel;
 
-    // Right Side
-    @FXML private Button chargeButton;
+    @FXML
+    private ListView<Products> orderList;
+    @FXML
+    private Text totalLabel;
 
     // Get database location and credentials
     private static final String DB_URL = "jdbc:postgresql://csce-315-db.engr.tamu.edu/gang_00_db";
@@ -196,7 +203,7 @@ public class AppController {
 
                 Text productText = new Text(product_name);
                 productText.setStyle("-fx-font-weight: bold; -fx-font-size: 30px;");
-                Text productPrice = new Text("Item Price: $" + product_price);
+                Text productPrice = new Text("Current Price: $" + product_price);
                 productPrice.setStyle("-fx-font-size: 20px;");
 
                 IntegerProperty quantity = new SimpleIntegerProperty(1);
@@ -324,10 +331,10 @@ public class AppController {
 
         Text text = new Text(category_name);
         text.setStyle("-fx-font-weight: bold;");
-        //javafx.scene.control.Button button = new javafx.scene.control.Button("Select");
-        card.setOnMouseClicked(e -> showProducts(category_id));
+        javafx.scene.control.Button button = new javafx.scene.control.Button("Select");
+        button.setOnAction(e -> showProducts(category_id));
 
-        card.getChildren().addAll(text);
+        card.getChildren().addAll(text, button);
         return card;
     }
 
@@ -343,7 +350,7 @@ public class AppController {
         //javafx.scene.control.Button button = new javafx.scene.control.Button("Select");
         card.setOnMouseClicked(e -> getProduct(product_id, category_id, 0, ""));
 
-        card.getChildren().addAll(text);
+        card.getChildren().addAll(text, button);
         return card;
     }
 
@@ -365,29 +372,5 @@ public class AppController {
 
         card.getChildren().addAll(name, price, button);
         return card;
-    }
-
-    public static HBox createQuantitySelector(IntegerProperty quantity) {
-        Button minusButton = new Button("-");
-        Button plusButton = new Button("+");
-        Label quantityLabel = new Label();
-        quantityLabel.textProperty().bind(quantity.asString());
-
-        // Set button actions
-        minusButton.setOnAction(e -> {
-            if (quantity.get() > 1) {
-                quantity.set(quantity.get() - 1);
-            }
-        });
-
-        plusButton.setOnAction(e -> {
-            quantity.set(quantity.get() + 1);
-        });
-
-        HBox box = new HBox(5); // spacing between buttons and label
-        box.setAlignment(Pos.CENTER);
-        box.getChildren().addAll(minusButton, quantityLabel, plusButton);
-
-        return box;
     }
 }
