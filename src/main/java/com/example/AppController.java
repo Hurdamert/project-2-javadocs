@@ -56,7 +56,7 @@ public class AppController {
     @FXML
     private ListView<Products> orderList;
     @FXML
-    private Label totalLabel;
+    private Text totalLabel;
 
     // Get database location and credentials
     private static final String DB_URL = "jdbc:postgresql://csce-315-db.engr.tamu.edu/gang_00_db";
