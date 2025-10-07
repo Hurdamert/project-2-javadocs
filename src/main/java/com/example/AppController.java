@@ -1,31 +1,31 @@
 package com.example;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.ArrayList;
 
 import com.gluonhq.charm.glisten.control.BottomNavigationButton;
 
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.geometry.Pos;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.TilePane;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
-import javafx.collections.ObservableList;
-import javafx.scene.control.ListView;
 
 public class AppController {
 
@@ -44,23 +44,26 @@ public class AppController {
     private AnchorPane centerAnchorPane;
 
     // Bottom nav
-    @FXML
-    private BottomNavigationButton checkOut;
-    @FXML
-    private BottomNavigationButton transactions;
-    @FXML
-    private BottomNavigationButton clockInOut;
-    @FXML
-    private BottomNavigationButton more;
+    @FXML private BottomNavigationButton checkOut;
+    @FXML private BottomNavigationButton transactions;
+    @FXML private BottomNavigationButton clockInOut;
+    @FXML private BottomNavigationButton more;
 
-    @FXML
-    private ListView<Products> orderList;
-    @FXML
-    private Text totalLabel;
+    @FXML private ListView<String> orderList;
+    private ObservableList<String> observableOrderItems = FXCollections.observableArrayList();
+    @FXML private Text totalLabel;
+    @FXML private Text taxLabel;
+
+    @FXML private Button chargeButton;
 
     // Get database location and credentials
     private static final String DB_URL = "jdbc:postgresql://csce-315-db.engr.tamu.edu/gang_00_db";
     private dbSetup my = new dbSetup();
+
+    private double currentSubTotal = 0;
+    private ArrayList<OrderItem> orderItems = new ArrayList<>();
+
+
 
     @FXML
     private void initialize() {
@@ -73,6 +76,9 @@ public class AppController {
         transactions.setOnAction(e -> openTransaction());
         clockInOut.setOnAction(e -> clockIn_Out());
         more.setOnAction(e -> showMore());
+        chargeButton.setOnAction(e -> checkOutOrder());
+
+        orderList.setItems(observableOrderItems);
     }
 
     private void getCategories() {
@@ -161,7 +167,7 @@ public class AppController {
         centerAnchorPane.getChildren().add(contentBox);
     }
 
-    private void getProduct(int product_id, int category_id) {
+    private void getProduct(int product_id, int category_id, double addon_extra_price, String addon_string) {
         centerAnchorPane.getChildren().clear();
 
         // Create Back button
@@ -183,7 +189,7 @@ public class AppController {
 
             if (rs1.next()) {
                 String product_name = rs1.getString("product_name");
-                double product_price = rs1.getDouble("product_price");
+                double product_price = rs1.getDouble("product_price") + addon_extra_price;
 
                 VBox productInfo = new VBox(5); // spacing 5px
 
@@ -191,8 +197,17 @@ public class AppController {
                 productText.setStyle("-fx-font-weight: bold; -fx-font-size: 30px;");
                 Text productPrice = new Text("Current Price: $" + product_price);
                 productPrice.setStyle("-fx-font-size: 20px;");
+
+                IntegerProperty quantity = new SimpleIntegerProperty(1);
+                HBox quantitySelector = createQuantitySelector(quantity);
+
                 Button orderButton = new Button("Add to order");
-                productInfo.getChildren().addAll(productText, productPrice, orderButton);
+                orderButton.setOnAction(e -> {
+                    int product_quantity = quantity.get();
+                    addItemToOrder(product_id, product_name, product_price, product_quantity, addon_string, category_id);
+                });
+
+                productInfo.getChildren().addAll(productText, productPrice, quantitySelector, orderButton);
                 productPane.getChildren().add(productInfo);
                 productPane.setStyle("-fx-padding: 20px 10 0 0;");
             }
@@ -203,7 +218,7 @@ public class AppController {
                 String addon_name = rs2.getString("addon_name");
                 double addon_price = rs2.getDouble("addon_price");
                 int addon_id = rs2.getInt("addon_id");
-                VBox card = createAddonCard(addon_name, addon_price, addon_id);
+                VBox card = createAddonCard(addon_name, addon_price, addon_id, product_id, category_id, addon_extra_price, addon_string);
                 productPane.getChildren().add(card);
             }
 
@@ -265,6 +280,40 @@ public class AppController {
         System.out.println("More information...");
     }
 
+    private void checkOutOrder() {
+        System.out.println("Checked out yo!");
+        currentSubTotal = 0;
+        updateTotalAndTax();
+
+        // go back to the main menu
+        getCategories();
+    }
+
+    private void addItemToOrder(int product_id, String product_name, double price, int item_count, String addon_string, int category_id){
+        currentSubTotal += price * item_count;
+
+        OrderItem item = new OrderItem(product_id, product_name, price, item_count);
+        orderItems.add(item);
+        if (addon_string.length() < 3) {
+            addon_string += "  None";
+        }
+        String itemString = item.getProduct_name() 
+                            + "\n    quantity: " + item_count
+                            + "\n    add-ons: " + addon_string.substring(2)
+                            + "\n    price: " + item.getItem_price();
+                            
+        observableOrderItems.add(itemString);
+
+        updateTotalAndTax();
+
+        getProduct(product_id, category_id, 0, "");
+    }
+
+    private void updateTotalAndTax(){
+        totalLabel.setText(String.format("Total: $%.2f", currentSubTotal));
+        taxLabel.setText(String.format("Tax: $%.2f", currentSubTotal * 0.05));
+    }
+
     // Creates a reusable category card
     private VBox createCategoryCard(String category_name, int category_id) {
         VBox card = new VBox(5);
@@ -274,10 +323,10 @@ public class AppController {
 
         Text text = new Text(category_name);
         text.setStyle("-fx-font-weight: bold;");
-        javafx.scene.control.Button button = new javafx.scene.control.Button("Select");
-        button.setOnAction(e -> showProducts(category_id));
+        //javafx.scene.control.Button button = new javafx.scene.control.Button("Select");
+        card.setOnMouseClicked(e -> showProducts(category_id));
 
-        card.getChildren().addAll(text, button);
+        card.getChildren().addAll(text);
         return card;
     }
 
@@ -290,15 +339,15 @@ public class AppController {
 
         Text text = new Text(product_name);
         text.setStyle("-fx-font-weight: bold;");
-        javafx.scene.control.Button button = new javafx.scene.control.Button("Select");
-        button.setOnAction(e -> getProduct(product_id, category_id));
+        //javafx.scene.control.Button button = new javafx.scene.control.Button("Select");
+        card.setOnMouseClicked(e -> getProduct(product_id, category_id, 0, ""));
 
-        card.getChildren().addAll(text, button);
+        card.getChildren().addAll(text);
         return card;
     }
 
     // Creates a reusable addon card
-    private VBox createAddonCard(String addon_name, double addon_price, int addon_id) {
+    private VBox createAddonCard(String addon_name, double addon_price, int addon_id, int product_id, int category_id, double current_addon_extra_price, String current_addon_string) {
         VBox card = new VBox(5);
         card.setStyle(
                 "-fx-border-color: black; -fx-border-radius: 5; -fx-background-color: #b9b9b9ff; -fx-background-radius: 5;");
@@ -308,9 +357,28 @@ public class AppController {
         name.setStyle("-fx-font-weight: bold;");
         Text price = new Text("Add-on Price: $" + addon_price);
         javafx.scene.control.Button button = new javafx.scene.control.Button("Add");
-        // button.setOnAction(e -> getProduct(product_id, category_id));
+        button.setOnMouseClicked(
+            e -> getProduct(product_id, category_id, current_addon_extra_price + addon_price, current_addon_string + ", " + addon_name)
+            //e -> System.out.println("Addon item clicked")
+            );
 
         card.getChildren().addAll(name, price, button);
         return card;
     }
+
+    private HBox createQuantitySelector(IntegerProperty quantity) {
+    Button plus = new Button("+");
+    Button minus = new Button("-");
+    Label quantityLabel = new Label();
+    quantityLabel.textProperty().bind(quantity.asString());
+
+    plus.setOnAction(e -> quantity.set(quantity.get() + 1));
+    minus.setOnAction(e -> {
+        if (quantity.get() > 1) quantity.set(quantity.get() - 1);
+    });
+
+    HBox box = new HBox(5, minus, quantityLabel, plus);
+    box.setAlignment(Pos.CENTER);
+    return box;
+}
 }
