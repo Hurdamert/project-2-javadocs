@@ -53,6 +53,7 @@ public class AppController {
     private ObservableList<String> observableOrderItems = FXCollections.observableArrayList();
     @FXML private Text totalLabel;
     @FXML private Text taxLabel;
+    @FXML private Text subTotalLabel;
 
     @FXML private Button chargeButton;
 
@@ -408,8 +409,9 @@ public class AppController {
     }
 
     private void updateTotalAndTax(){
-        totalLabel.setText(String.format("Total: $%.2f", currentSubTotal));
+        totalLabel.setText(String.format("Total: $%.2f", currentSubTotal + (currentSubTotal * 0.05)));
         taxLabel.setText(String.format("Tax: $%.2f", currentSubTotal * 0.05));
+        subTotalLabel.setText(String.format("Sub Total: $%.2f", currentSubTotal));
     }
 
     // Creates a reusable category card
