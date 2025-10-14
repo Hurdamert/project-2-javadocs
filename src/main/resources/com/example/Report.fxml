@@ -8,9 +8,9 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="504.0" prefWidth="723.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.ReportController">
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="460.0" prefWidth="706.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.ReportController">
    <center>
-      <VBox prefHeight="200.0" prefWidth="100.0" BorderPane.alignment="CENTER">
+      <VBox prefHeight="200.0" prefWidth="627.0" BorderPane.alignment="CENTER">
          <children>
             <HBox prefHeight="100.0" prefWidth="200.0">
                <children>
@@ -35,6 +35,17 @@
                               <Font size="16.0" />
                            </font>
                         </Label>
+                        <Label prefHeight="25.0" prefWidth="432.0" text="Click the button on the right to see the Z Report:">
+                           <font>
+                              <Font size="16.0" />
+                           </font>
+                           <VBox.margin>
+                              <Insets top="30.0" />
+                           </VBox.margin>
+                           <padding>
+                              <Insets left="20.0" />
+                           </padding>
+                        </Label>
                      </children>
                   </VBox>
                   <VBox prefHeight="100.0" prefWidth="161.0">
@@ -48,6 +59,14 @@
                            </VBox.margin>
                         </Button>
                         <Button fx:id="realisticSaleHistory" mnemonicParsing="false" onAction="#initialize" text="Check">
+                           <font>
+                              <Font size="16.0" />
+                           </font>
+                           <VBox.margin>
+                              <Insets left="30.0" top="18.0" />
+                           </VBox.margin>
+                        </Button>
+                        <Button fx:id="zReport" mnemonicParsing="false" onAction="#initialize" text="Check">
                            <font>
                               <Font size="16.0" />
                            </font>

@@ -34,6 +34,7 @@ public class ReportController {
     @FXML private Button recentOrders;
     @FXML private Button daily;
     @FXML private Button xReport;
+    @FXML private Button zReport;
 
 
     @FXML
@@ -47,6 +48,7 @@ public class ReportController {
         recentOrders.setOnAction(e -> recentOrdersShow());
         daily.setOnAction(e -> dailyOrderNRevenuesShow());
         xReport.setOnAction(e -> checkXReport());
+        zReport.setOnAction(e -> zReportShow());
 
     }
 
@@ -411,6 +413,39 @@ public class ReportController {
             Stage stage = new Stage();
             stage.initModality(Modality.WINDOW_MODAL);
             stage.setTitle("DailyOrders&Revenues");
+            BorderPane root = new BorderPane(tv);
+            stage.setScene(new Scene(root, 900, 600));
+            stage.show();
+
+            conn.close();
+        } catch (Exception e) {
+            // TODO: handle exception
+            e.printStackTrace();
+            e.getMessage();
+        }
+    }
+
+    private void zReportShow() {
+        try{
+            Class.forName("org.postgresql.Driver");
+            Connection conn = DriverManager.getConnection(DB_URL, my.user, my.pswd);
+            
+            // Create statement
+            Statement stmt = conn.createStatement();
+            
+            // Run sql query
+            String sqlStatement = """
+                                    SELECT date_part('isoyear', date_time)::int AS Years, date_part('week', date_time)::int AS Weeks, COUNT(*) AS orders FROM orders
+                                    GROUP BY Years, Weeks
+                                    ORDER BY Years, Weeks
+                                                        """;
+            ResultSet rs = stmt.executeQuery(sqlStatement);
+
+            TableView<ObservableList<String>> tv = buildTableFromResultSet(rs);
+
+            Stage stage = new Stage();
+            stage.initModality(Modality.WINDOW_MODAL);
+            stage.setTitle("Z Report");
             BorderPane root = new BorderPane(tv);
             stage.setScene(new Scene(root, 900, 600));
             stage.show();

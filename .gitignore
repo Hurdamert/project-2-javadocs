@@ -2,8 +2,4 @@
 a.out
 target/
 .vscode/
-<<<<<<< HEAD
-=======
-target/
->>>>>>> haol
 *.class
