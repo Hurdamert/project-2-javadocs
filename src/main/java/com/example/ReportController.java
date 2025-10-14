@@ -33,6 +33,7 @@ public class ReportController {
     @FXML private Button top10Product;
     @FXML private Button recentOrders;
     @FXML private Button daily;
+    @FXML private Button xReport;
     @FXML private Button zReport;
 
 
@@ -46,6 +47,7 @@ public class ReportController {
         top10Product.setOnAction(e -> top10ProductShow());
         recentOrders.setOnAction(e -> recentOrdersShow());
         daily.setOnAction(e -> dailyOrderNRevenuesShow());
+        xReport.setOnAction(e -> checkXReport());
         zReport.setOnAction(e -> zReportShow());
 
     }
@@ -114,6 +116,69 @@ public class ReportController {
             e.printStackTrace();
             e.getMessage();
         }
+    }
+
+    private void checkXReport() {
+        try{
+            Class.forName("org.postgresql.Driver");
+            Connection conn = DriverManager.getConnection(DB_URL, my.user, my.pswd);
+            
+            // Create statement
+            Statement stmt = conn.createStatement();
+
+            // ** The query result might be null if there is 0 record for today in the database **
+            
+            // Check the sub_total statred at open time and until now.
+            String sqlStatement1 = """
+                                    SELECT COUNT(*) AS orders, COALESCE(SUM(sub_total), 0)::NUMERIC(12,2) AS gross_sales,
+                                    (CASE WHEN COUNT(*) = 0 THEN 0 
+                                        ELSE ROUND(SUM(sub_total)/COUNT(*), 2)
+                                        END) AS avg_ticket FROM orders
+                                    WHERE date_time >= CURRENT_DATE AND date_time <  NOW();
+                                                                                            """;
+            ResultSet rs1 = stmt.executeQuery(sqlStatement1);
+
+            TableView<ObservableList<String>> tv = buildTableFromResultSet(rs1);
+            
+            // Check today's top 10 product
+            String sqlStatement2 = """
+                                    SELECT p.product_id, p.product_name, SUM(oi.qty) AS qty_sold FROM orderitems oi JOIN orders o ON o.order_id = oi.order_id JOIN products p ON p.product_id = oi.product_id
+                                    WHERE o.date_time >= CURRENT_DATE AND o.date_time < NOW()
+                                    GROUP BY p.product_id, p.product_name
+                                    ORDER BY qty_sold DESC, p.product_name
+                                                                            """;
+            ResultSet rs2 = stmt.executeQuery(sqlStatement2);
+
+            TableView<ObservableList<String>> tv2 = buildTableFromResultSet(rs2);
+
+            // Check today's top 10 product
+            String sqlStatement3 = """
+                                    SELECT EXTRACT(HOUR FROM date_time)::int AS per_hour, COUNT(*) AS orders, ROUND(SUM(sub_total),2) AS gross_sales FROM orders
+                                    WHERE date_time >= CURRENT_DATE AND date_time < NOW()
+                                    GROUP BY 1
+                                    ORDER BY 1
+                                                """;
+            ResultSet rs3 = stmt.executeQuery(sqlStatement3);
+
+            TableView<ObservableList<String>> tv3 = buildTableFromResultSet(rs3);
+            
+            VBox content = new VBox(10, new Label("Summary (Today to Now)"), tv, new Label("Hourly Breakdown"), tv3, new Label("Top 10 Items"), tv2);
+            content.setPrefSize(900, 700);
+
+
+            Stage stage = new Stage();
+            stage.initModality(Modality.WINDOW_MODAL);
+            stage.setTitle("X-Report");
+            stage.setScene(new Scene(new BorderPane(new ScrollPane(content)), 950, 750));
+            stage.show();
+
+            conn.close();
+        } catch (Exception e) {
+            // TODO: handle exception
+            e.printStackTrace();
+            e.getMessage();
+        }
+
     }
 
     private void realisticSaleHistoryShow() {
