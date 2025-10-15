@@ -3,3 +3,4 @@ a.out
 target/
 .vscode/
 *.class
+.env

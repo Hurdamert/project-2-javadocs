@@ -1,6 +1,10 @@
 package com.example;
 
-public final class dbSetup  {
-  public static final String user = "gang_00";
-  public static final String pswd = "gang_00";
+import io.github.cdimascio.dotenv.Dotenv;
+
+public final class dbSetup {
+    private static final Dotenv dotenv = Dotenv.load();
+
+    public static final String user = dotenv.get("DB_USER");
+    public static final String pswd = dotenv.get("DB_PASSWORD");
 }
