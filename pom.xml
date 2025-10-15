@@ -61,6 +61,11 @@
       <artifactId>display</artifactId>
       <version>${attach.version}</version>
     </dependency>
+    <dependency>
+  <groupId>io.github.cdimascio</groupId>
+  <artifactId>java-dotenv</artifactId>
+  <version>5.2.2</version>
+  </dependency>
 
     <!-- JDBC drivers -->
     <dependency>
