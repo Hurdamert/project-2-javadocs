@@ -5,8 +5,16 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.Statement;
+import java.sql.PreparedStatement;
+import java.sql.Timestamp;
 
+
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.StringProperty;
+import javafx.beans.property.IntegerProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -14,11 +22,13 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TitledPane;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
+import javafx.scene.control.Alert;
 import javafx.stage.Stage;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -28,11 +38,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.GridPane;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
-
-
-
-
-
 
 public class ReportController {
 
@@ -480,134 +485,236 @@ public class ReportController {
     return java.text.NumberFormat.getCurrencyInstance(java.util.Locale.US).format(x);
     }
 
-    private void zReportShow() {
-        //Compute the business day window
-        LocalDate today = LocalDate.now();
-        LocalDateTime start = today.atTime(OPEN_HOUR, 0, 0);
-        LocalDateTime end   = today.atTime(CLOSE_HOUR, 0, 0);
+public void zReportShow() {
+    // --- Business-day window (keeps your OPEN_HOUR / CLOSE_HOUR behavior) ---
+    java.time.LocalDate today = java.time.LocalDate.now();
+    java.time.LocalDateTime start = today.atTime(OPEN_HOUR, 0, 0);
+    java.time.LocalDateTime end   = today.atTime(CLOSE_HOUR, 0, 0);
+    java.time.LocalDate businessDate = start.toLocalDate();
 
-        Stage stage = new Stage();
+    // Local totals to present/log
+    double grossSales = 0.0;
+    double taxCollected = 0.0;
+    double totalSales = 0.0;
 
-        //Query: sales + tax for the window
-        double grossSales   = 0.0;
-        double taxCollected = 0.0; 
-        double totalSales   = 0.0;
+    try (java.sql.Connection conn = java.sql.DriverManager.getConnection(DB_URL, my.user, my.pswd)) {
 
-        //Employees for signatures
-        ObservableList<SignatureRow> sigRows = FXCollections.observableArrayList();
+        // --- Idempotent DDL: durable storage + reset plumbing (safe to run each time) ---
+        try (java.sql.Statement ddl = conn.createStatement()) {
+            // Z report header: one row per business day
+            ddl.executeUpdate("""
+                CREATE TABLE IF NOT EXISTS z_reports (
+                    id             BIGSERIAL PRIMARY KEY,
+                    business_date  DATE NOT NULL UNIQUE,
+                    generated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                    gross_sales    NUMERIC(12,2) NOT NULL,
+                    tax_collected  NUMERIC(12,2) NOT NULL,
+                    total_sales    NUMERIC(12,2) NOT NULL
+                )
+            """);
+            ddl.executeUpdate("""
+                CREATE UNIQUE INDEX IF NOT EXISTS uq_z_reports_business_date
+                ON z_reports (business_date)
+            """);
 
-        // Connect to database
-        try (Connection conn = DriverManager.getConnection(DB_URL, my.user, my.pswd)) {
+            // Orders get permanently tagged with the Z that closed them (enables “reset to zero”)
+            ddl.executeUpdate("""
+                ALTER TABLE orders
+                ADD COLUMN IF NOT EXISTS z_report_id BIGINT
+                REFERENCES z_reports(id) ON DELETE SET NULL
+            """);
+            ddl.executeUpdate("""
+                CREATE INDEX IF NOT EXISTS idx_orders_zreport ON orders(z_report_id)
+            """);
+        }
 
-            // Sales & tax
-            String aggSql = """
-                SELECT
-                    COALESCE(SUM(sub_total), 0) AS gross_sales
-                FROM orders
-                WHERE date_time >= ? AND date_time < ?
-            """;
-            try (PreparedStatement ps = conn.prepareStatement(aggSql)) {
-                ps.setTimestamp(1, Timestamp.valueOf(start));
-                ps.setTimestamp(2, Timestamp.valueOf(end));
-                try (ResultSet rs = ps.executeQuery()) {
+        boolean oldAuto = conn.getAutoCommit();
+        conn.setAutoCommit(false);
+
+        try {
+            // --- Guard: only once per business day (serialize with FOR UPDATE) ---
+            Long existingId = null;
+            java.math.BigDecimal persistedGross = null, persistedTax = null, persistedTotal = null;
+
+            try (java.sql.PreparedStatement ps = conn.prepareStatement("""
+                SELECT id, gross_sales, tax_collected, total_sales
+                FROM z_reports
+                WHERE business_date = ? FOR UPDATE
+            """)) {
+                ps.setObject(1, businessDate);
+                try (java.sql.ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
-                        grossSales   = rs.getDouble("gross_sales");
-                        taxCollected = grossSales * 0.05;
-                        totalSales   = grossSales + taxCollected;
+                        existingId      = rs.getLong("id");
+                        persistedGross  = rs.getBigDecimal("gross_sales");
+                        persistedTax    = rs.getBigDecimal("tax_collected");
+                        persistedTotal  = rs.getBigDecimal("total_sales");
                     }
                 }
             }
 
-            // Employees (adjust filter to match your schema; this uses "active = true")
-            String empSql = """
-                SELECT employee_id,
-                    COALESCE(employee_name,'') AS name
-                FROM employees
-                WHERE COALESCE(status, 'Active') = 'Active'
-                ORDER BY name
-            """;
-            try (PreparedStatement ps = conn.prepareStatement(empSql);
-                ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    sigRows.add(new SignatureRow(
-                        rs.getInt("employee_id"),
-                        rs.getString("name").trim()
-                    ));
+            if (existingId != null) {
+                // Already finalized today — load persisted totals
+                grossSales   = persistedGross.doubleValue();
+                taxCollected = persistedTax.doubleValue();
+                totalSales   = persistedTotal.doubleValue();
+
+                conn.commit();
+                conn.setAutoCommit(oldAuto);
+
+                // === NEW: display totals in a table (like other reports) ===
+                try (java.sql.PreparedStatement showPs = conn.prepareStatement("""
+                        SELECT
+                            ?::numeric(12,2) AS gross_sales,
+                            ?::numeric(12,2) AS tax_collected,
+                            ?::numeric(12,2) AS total_sales
+                    """)) {
+                    showPs.setDouble(1, grossSales);
+                    showPs.setDouble(2, taxCollected);
+                    showPs.setDouble(3, totalSales);
+                    try (java.sql.ResultSet showRs = showPs.executeQuery()) {
+                        TableView<ObservableList<String>> tv = buildTableFromResultSet(showRs);
+                        Stage stage = new Stage();
+                        stage.initModality(Modality.WINDOW_MODAL);
+                        stage.setTitle("Z-Report (Finalized) — " + businessDate);
+                        BorderPane root = new BorderPane(tv);
+                        stage.setScene(new Scene(root, 600, 160));
+                        stage.show();
+                    }
+                }
+
+                return;
+            }
+
+            // --- Aggregate ONLY orders in the window that haven't been closed by any Z ---
+            double aggGross = 0.0;
+            double aggTax   = 0.0;
+            double aggTotal = 0.0;
+
+            try (java.sql.PreparedStatement ps = conn.prepareStatement("""
+                SELECT
+                    COALESCE(SUM(sub_total), 0)::numeric(12,2) AS gross_sales
+                FROM orders
+                WHERE date_time >= ? AND date_time < ?
+                  AND z_report_id IS NULL
+            """)) {
+                ps.setTimestamp(1, java.sql.Timestamp.valueOf(start));
+                ps.setTimestamp(2, java.sql.Timestamp.valueOf(end));
+                try (java.sql.ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        aggGross = rs.getDouble("gross_sales");
+                        aggTax   = aggGross * 0.05;
+                        aggTotal = aggGross + aggTax;
+                    }
                 }
             }
 
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            new Alert(Alert.AlertType.ERROR, "Failed to load Z-Report data.").showAndWait();
-            return;
+            grossSales   = aggGross;
+            taxCollected = aggTax;
+            totalSales   = aggTotal;
+
+            // --- Persist the Z header (UNIQUE business_date enforces once/day) ---
+            long reportId;
+            try (java.sql.PreparedStatement ps = conn.prepareStatement("""
+                INSERT INTO z_reports (business_date, gross_sales, tax_collected, total_sales)
+                VALUES (?, ?, ?, ?)
+                RETURNING id
+            """)) {
+                ps.setObject(1, businessDate);
+                ps.setDouble(2, aggGross);
+                ps.setDouble(3, aggTax);
+                ps.setDouble(4, aggTotal);
+                try (java.sql.ResultSet rs = ps.executeQuery()) {
+                    rs.next();
+                    reportId = rs.getLong(1);
+                }
+            }
+
+            // --- Permanent side effect: “close” all orders in the window (the reset) ---
+            try (java.sql.PreparedStatement ps = conn.prepareStatement("""
+                UPDATE orders
+                SET z_report_id = ?
+                WHERE date_time >= ? AND date_time < ?
+                  AND z_report_id IS NULL
+            """)) {
+                ps.setLong(1, reportId);
+                ps.setTimestamp(2, java.sql.Timestamp.valueOf(start));
+                ps.setTimestamp(3, java.sql.Timestamp.valueOf(end));
+                ps.executeUpdate();
+            }
+
+            conn.commit();
+            conn.setAutoCommit(oldAuto);
+
+            // === NEW: display totals in a table (like other reports) ===
+            try (java.sql.PreparedStatement showPs = conn.prepareStatement("""
+                    SELECT
+                        ?::numeric(12,2) AS gross_sales,
+                        ?::numeric(12,2) AS tax_collected,
+                        ?::numeric(12,2) AS total_sales
+                """)) {
+                showPs.setDouble(1, grossSales);
+                showPs.setDouble(2, taxCollected);
+                showPs.setDouble(3, totalSales);
+                try (java.sql.ResultSet showRs = showPs.executeQuery()) {
+                    TableView<ObservableList<String>> tv = buildTableFromResultSet(showRs);
+                    Stage stage = new Stage();
+                    stage.initModality(Modality.WINDOW_MODAL);
+                    stage.setTitle("Z-Report — " + businessDate);
+                    BorderPane root = new BorderPane(tv);
+                    stage.setScene(new Scene(root, 600, 160));
+                    stage.show();
+                }
+            }
+
+        } catch (java.sql.SQLException e) {
+            conn.rollback();
+            // If another terminal won the UNIQUE(business_date) race, fetch and display the persisted totals
+            String sqlState = e.getSQLState();
+            if (sqlState != null && sqlState.startsWith("23")) { // integrity constraint violation
+                try (java.sql.PreparedStatement ps = conn.prepareStatement("""
+                    SELECT gross_sales, tax_collected, total_sales
+                    FROM z_reports WHERE business_date = ?
+                """)) {
+                    ps.setObject(1, businessDate);
+                    try (java.sql.ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            grossSales   = rs.getBigDecimal("gross_sales").doubleValue();
+                            taxCollected = rs.getBigDecimal("tax_collected").doubleValue();
+                            totalSales   = rs.getBigDecimal("total_sales").doubleValue();
+                        }
+                    }
+                }
+                // Show as table (finalized)
+                try (java.sql.PreparedStatement showPs = conn.prepareStatement("""
+                        SELECT
+                            ?::numeric(12,2) AS gross_sales,
+                            ?::numeric(12,2) AS tax_collected,
+                            ?::numeric(12,2) AS total_sales
+                """)) {
+                    showPs.setDouble(1, grossSales);
+                    showPs.setDouble(2, taxCollected);
+                    showPs.setDouble(3, totalSales);
+                    try (java.sql.ResultSet showRs = showPs.executeQuery()) {
+                        TableView<ObservableList<String>> tv = buildTableFromResultSet(showRs);
+                        Stage stage = new Stage();
+                        stage.initModality(Modality.WINDOW_MODAL);
+                        stage.setTitle("Z-Report (Finalized) — " + businessDate);
+                        BorderPane root = new BorderPane(tv);
+                        stage.setScene(new Scene(root, 600, 160));
+                        stage.show();
+                    }
+                }
+            } else {
+                // No external helpers; just log
+                System.err.println("Failed to generate Z Report: " + e.getMessage());
+                e.printStackTrace(System.err);
+            }
         }
 
-        //Build the UI
-        Label title = new Label("Z-Report");
-        title.getStyleClass().add("h2");
-
-        Label range = new Label(String.format(
-            "Business day: %s %02d:00 — %02d:00",
-            today, OPEN_HOUR, CLOSE_HOUR
-        ));
-        range.getStyleClass().add("subtle");
-
-        // Sales & Tax box
-        GridPane salesGrid = new GridPane();
-        salesGrid.setHgap(16);
-        salesGrid.setVgap(8);
-
-        Label grossLbl = new Label("Gross Sales (pre-tax):");
-        Label taxLbl = new Label("Tax Collected:");
-        Label totalLbl = new Label("Total Sales (with tax):");
-
-        Label grossVal = new Label(currency(grossSales));
-        Label taxVal = new Label(currency(taxCollected));
-        Label totalVal = new Label(currency(totalSales));
-
-        salesGrid.addRow(0, grossLbl, grossVal);
-        salesGrid.addRow(1, taxLbl,   taxVal);
-        salesGrid.addRow(2, totalLbl, totalVal);
-
-        TitledPane salesPane = new TitledPane("Sales & Tax Information", salesGrid);
-        salesPane.setExpanded(true);
-
-        // Employee Signatures table
-        TableView<SignatureRow> sigTable = new TableView<>(sigRows);
-        sigTable.setEditable(true);
-
-        TableColumn<SignatureRow, String> empCol = new TableColumn<>("Employee");
-        empCol.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().getEmployeeName()));
-        empCol.setPrefWidth(260);
-
-        TableColumn<SignatureRow, String> sigCol = new TableColumn<>("Signature");
-        sigCol.setCellValueFactory(cd -> cd.getValue().signatureProperty());
-        sigCol.setCellFactory(TextFieldTableCell.forTableColumn());
-        sigCol.setPrefWidth(220);
-
-        TableColumn<SignatureRow, Boolean> signedCol = new TableColumn<>("Signed");
-        signedCol.setCellValueFactory(cd -> cd.getValue().signedProperty());
-        signedCol.setCellFactory(tc -> {
-            CheckBoxTableCell<SignatureRow, Boolean> cell = new CheckBoxTableCell<>();
-            cell.setAlignment(Pos.CENTER);
-            return cell;
-        });
-        signedCol.setPrefWidth(90);
-
-        sigTable.getColumns().setAll(empCol, sigCol, signedCol);
-
-        TitledPane sigPane = new TitledPane("Employee Signatures", sigTable);
-        sigPane.setExpanded(true);
-
-        VBox rootBox = new VBox(12, title, range, salesPane, sigPane);
-        rootBox.setPadding(new Insets(18));
-
-        stage = new Stage();
-        stage.setTitle("Z-Report");
-        stage.initModality(Modality.WINDOW_MODAL);
-        stage.setResizable(true);
-        
-        stage.setScene(new Scene(new BorderPane(rootBox), 720, 560));
-        stage.show();
+    } catch (java.sql.SQLException ex) {
+        // No external helpers; just log
+        System.err.println("Failed to generate Z Report (connection/setup): " + ex.getMessage());
+        ex.printStackTrace(System.err);
     }
+}
 }
