@@ -5,8 +5,16 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.Statement;
+import java.sql.PreparedStatement;
+import java.sql.Timestamp;
 
+
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.StringProperty;
+import javafx.beans.property.IntegerProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -14,12 +22,22 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TitledPane;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
+import javafx.scene.control.Alert;
 import javafx.stage.Stage;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.control.cell.CheckBoxTableCell;
+import javafx.scene.control.cell.TextFieldTableCell;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.GridPane;
+import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 public class ReportController {
 
@@ -37,7 +55,9 @@ public class ReportController {
     @FXML private Button xReport;
     @FXML private Button zReport;
 
-
+    private static final int OPEN_HOUR  = 11;
+    private static final int CLOSE_HOUR = 22;
+    
     @FXML
     private void initialize() {
         weeklySaleHistory.setOnAction(e -> weeklySaleHistoryShow());
@@ -426,56 +446,275 @@ public class ReportController {
         }
     }
 
-    private void zReportShow() {
-        try{
-            Class.forName("org.postgresql.Driver");
-            Connection conn = DriverManager.getConnection(DB_URL, my.user, my.pswd);
-            
-            // Create statement
-            Statement stmt = conn.createStatement();
-            
-            // Run sql query
-            String sqlStatement = """
-                                    SELECT date_part('isoyear', date_time)::int AS Years, date_part('week', date_time)::int AS Weeks, COUNT(*) AS orders FROM orders
-                                    GROUP BY Years, Weeks
-                                    ORDER BY Years, Weeks
-                                                        """;
-            ResultSet rs = stmt.executeQuery(sqlStatement);
+    // Signature class for employee signatures
+    public static class SignatureRow {
+    private final IntegerProperty employeeId = new SimpleIntegerProperty();
+    private final StringProperty  employeeName = new SimpleStringProperty();
+    private final StringProperty  signature = new SimpleStringProperty("");
+    private final BooleanProperty signed = new SimpleBooleanProperty(false);
 
-            TableView<ObservableList<String>> tv = buildTableFromResultSet(rs);
-
-            Stage stage = new Stage();
-            stage.initModality(Modality.WINDOW_MODAL);
-            stage.setTitle("Z Report");
-            BorderPane root = new BorderPane(tv);
-            stage.setScene(new Scene(root, 900, 600));
-            stage.show();
-
-            conn.close();
-        } catch (Exception e) {
-            // TODO: handle exception
-            e.printStackTrace();
-            e.getMessage();
+    public SignatureRow(int id, String name) {
+        employeeId.set(id);
+        employeeName.set(name);
+    }
+    public int getEmployeeId() { 
+        return employeeId.get(); 
         }
+    public String getEmployeeName() { 
+        return employeeName.get(); 
+        }
+    public StringProperty signatureProperty() { 
+        return signature; 
+        }
+    public BooleanProperty signedProperty() {
+            return signed; 
+            }
+    public String getSignature() {
+            return signature.get(); 
+            }
+    public boolean isSigned() { 
+        return signed.get();
+            }
     }
 
+    //help convert double to String
+    private static String currency(double x) {
+    if (x == 0.0){
+        return "$0.00";
+    } 
+    return java.text.NumberFormat.getCurrencyInstance(java.util.Locale.US).format(x);
+    }
 
+public void zReportShow() {
+    // --- Business-day window (keeps your OPEN_HOUR / CLOSE_HOUR behavior) ---
+    java.time.LocalDate today = java.time.LocalDate.now();
+    java.time.LocalDateTime start = today.atTime(OPEN_HOUR, 0, 0);
+    java.time.LocalDateTime end   = today.atTime(CLOSE_HOUR, 0, 0);
+    java.time.LocalDate businessDate = start.toLocalDate();
 
+    // Local totals to present/log
+    double grossSales = 0.0;
+    double taxCollected = 0.0;
+    double totalSales = 0.0;
 
+    try (java.sql.Connection conn = java.sql.DriverManager.getConnection(DB_URL, my.user, my.pswd)) {
 
+        // --- Idempotent DDL: durable storage + reset plumbing (safe to run each time) ---
+        try (java.sql.Statement ddl = conn.createStatement()) {
+            // Z report header: one row per business day
+            ddl.executeUpdate("""
+                CREATE TABLE IF NOT EXISTS z_reports (
+                    id             BIGSERIAL PRIMARY KEY,
+                    business_date  DATE NOT NULL UNIQUE,
+                    generated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                    gross_sales    NUMERIC(12,2) NOT NULL,
+                    tax_collected  NUMERIC(12,2) NOT NULL,
+                    total_sales    NUMERIC(12,2) NOT NULL
+                )
+            """);
+            ddl.executeUpdate("""
+                CREATE UNIQUE INDEX IF NOT EXISTS uq_z_reports_business_date
+                ON z_reports (business_date)
+            """);
 
+            // Orders get permanently tagged with the Z that closed them (enables “reset to zero”)
+            ddl.executeUpdate("""
+                ALTER TABLE orders
+                ADD COLUMN IF NOT EXISTS z_report_id BIGINT
+                REFERENCES z_reports(id) ON DELETE SET NULL
+            """);
+            ddl.executeUpdate("""
+                CREATE INDEX IF NOT EXISTS idx_orders_zreport ON orders(z_report_id)
+            """);
+        }
 
+        boolean oldAuto = conn.getAutoCommit();
+        conn.setAutoCommit(false);
 
+        try {
+            // --- Guard: only once per business day (serialize with FOR UPDATE) ---
+            Long existingId = null;
+            java.math.BigDecimal persistedGross = null, persistedTax = null, persistedTotal = null;
 
+            try (java.sql.PreparedStatement ps = conn.prepareStatement("""
+                SELECT id, gross_sales, tax_collected, total_sales
+                FROM z_reports
+                WHERE business_date = ? FOR UPDATE
+            """)) {
+                ps.setObject(1, businessDate);
+                try (java.sql.ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        existingId      = rs.getLong("id");
+                        persistedGross  = rs.getBigDecimal("gross_sales");
+                        persistedTax    = rs.getBigDecimal("tax_collected");
+                        persistedTotal  = rs.getBigDecimal("total_sales");
+                    }
+                }
+            }
 
+            if (existingId != null) {
+                // Already finalized today — load persisted totals
+                grossSales   = persistedGross.doubleValue();
+                taxCollected = persistedTax.doubleValue();
+                totalSales   = persistedTotal.doubleValue();
 
+                conn.commit();
+                conn.setAutoCommit(oldAuto);
 
+                // === NEW: display totals in a table (like other reports) ===
+                try (java.sql.PreparedStatement showPs = conn.prepareStatement("""
+                        SELECT
+                            ?::numeric(12,2) AS gross_sales,
+                            ?::numeric(12,2) AS tax_collected,
+                            ?::numeric(12,2) AS total_sales
+                    """)) {
+                    showPs.setDouble(1, grossSales);
+                    showPs.setDouble(2, taxCollected);
+                    showPs.setDouble(3, totalSales);
+                    try (java.sql.ResultSet showRs = showPs.executeQuery()) {
+                        TableView<ObservableList<String>> tv = buildTableFromResultSet(showRs);
+                        Stage stage = new Stage();
+                        stage.initModality(Modality.WINDOW_MODAL);
+                        stage.setTitle("Z-Report (Finalized) — " + businessDate);
+                        BorderPane root = new BorderPane(tv);
+                        stage.setScene(new Scene(root, 600, 160));
+                        stage.show();
+                    }
+                }
 
+                return;
+            }
 
+            // --- Aggregate ONLY orders in the window that haven't been closed by any Z ---
+            double aggGross = 0.0;
+            double aggTax   = 0.0;
+            double aggTotal = 0.0;
 
+            try (java.sql.PreparedStatement ps = conn.prepareStatement("""
+                SELECT
+                    COALESCE(SUM(sub_total), 0)::numeric(12,2) AS gross_sales
+                FROM orders
+                WHERE date_time >= ? AND date_time < ?
+                  AND z_report_id IS NULL
+            """)) {
+                ps.setTimestamp(1, java.sql.Timestamp.valueOf(start));
+                ps.setTimestamp(2, java.sql.Timestamp.valueOf(end));
+                try (java.sql.ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        aggGross = rs.getDouble("gross_sales");
+                        aggTax   = aggGross * 0.05;
+                        aggTotal = aggGross + aggTax;
+                    }
+                }
+            }
 
+            grossSales   = aggGross;
+            taxCollected = aggTax;
+            totalSales   = aggTotal;
 
+            // --- Persist the Z header (UNIQUE business_date enforces once/day) ---
+            long reportId;
+            try (java.sql.PreparedStatement ps = conn.prepareStatement("""
+                INSERT INTO z_reports (business_date, gross_sales, tax_collected, total_sales)
+                VALUES (?, ?, ?, ?)
+                RETURNING id
+            """)) {
+                ps.setObject(1, businessDate);
+                ps.setDouble(2, aggGross);
+                ps.setDouble(3, aggTax);
+                ps.setDouble(4, aggTotal);
+                try (java.sql.ResultSet rs = ps.executeQuery()) {
+                    rs.next();
+                    reportId = rs.getLong(1);
+                }
+            }
 
+            // --- Permanent side effect: “close” all orders in the window (the reset) ---
+            try (java.sql.PreparedStatement ps = conn.prepareStatement("""
+                UPDATE orders
+                SET z_report_id = ?
+                WHERE date_time >= ? AND date_time < ?
+                  AND z_report_id IS NULL
+            """)) {
+                ps.setLong(1, reportId);
+                ps.setTimestamp(2, java.sql.Timestamp.valueOf(start));
+                ps.setTimestamp(3, java.sql.Timestamp.valueOf(end));
+                ps.executeUpdate();
+            }
 
+            conn.commit();
+            conn.setAutoCommit(oldAuto);
 
+            // === NEW: display totals in a table (like other reports) ===
+            try (java.sql.PreparedStatement showPs = conn.prepareStatement("""
+                    SELECT
+                        ?::numeric(12,2) AS gross_sales,
+                        ?::numeric(12,2) AS tax_collected,
+                        ?::numeric(12,2) AS total_sales
+                """)) {
+                showPs.setDouble(1, grossSales);
+                showPs.setDouble(2, taxCollected);
+                showPs.setDouble(3, totalSales);
+                try (java.sql.ResultSet showRs = showPs.executeQuery()) {
+                    TableView<ObservableList<String>> tv = buildTableFromResultSet(showRs);
+                    Stage stage = new Stage();
+                    stage.initModality(Modality.WINDOW_MODAL);
+                    stage.setTitle("Z-Report — " + businessDate);
+                    BorderPane root = new BorderPane(tv);
+                    stage.setScene(new Scene(root, 600, 160));
+                    stage.show();
+                }
+            }
+
+        } catch (java.sql.SQLException e) {
+            conn.rollback();
+            // If another terminal won the UNIQUE(business_date) race, fetch and display the persisted totals
+            String sqlState = e.getSQLState();
+            if (sqlState != null && sqlState.startsWith("23")) { // integrity constraint violation
+                try (java.sql.PreparedStatement ps = conn.prepareStatement("""
+                    SELECT gross_sales, tax_collected, total_sales
+                    FROM z_reports WHERE business_date = ?
+                """)) {
+                    ps.setObject(1, businessDate);
+                    try (java.sql.ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            grossSales   = rs.getBigDecimal("gross_sales").doubleValue();
+                            taxCollected = rs.getBigDecimal("tax_collected").doubleValue();
+                            totalSales   = rs.getBigDecimal("total_sales").doubleValue();
+                        }
+                    }
+                }
+                // Show as table (finalized)
+                try (java.sql.PreparedStatement showPs = conn.prepareStatement("""
+                        SELECT
+                            ?::numeric(12,2) AS gross_sales,
+                            ?::numeric(12,2) AS tax_collected,
+                            ?::numeric(12,2) AS total_sales
+                """)) {
+                    showPs.setDouble(1, grossSales);
+                    showPs.setDouble(2, taxCollected);
+                    showPs.setDouble(3, totalSales);
+                    try (java.sql.ResultSet showRs = showPs.executeQuery()) {
+                        TableView<ObservableList<String>> tv = buildTableFromResultSet(showRs);
+                        Stage stage = new Stage();
+                        stage.initModality(Modality.WINDOW_MODAL);
+                        stage.setTitle("Z-Report (Finalized) — " + businessDate);
+                        BorderPane root = new BorderPane(tv);
+                        stage.setScene(new Scene(root, 600, 160));
+                        stage.show();
+                    }
+                }
+            } else {
+                // No external helpers; just log
+                System.err.println("Failed to generate Z Report: " + e.getMessage());
+                e.printStackTrace(System.err);
+            }
+        }
+
+    } catch (java.sql.SQLException ex) {
+        // No external helpers; just log
+        System.err.println("Failed to generate Z Report (connection/setup): " + ex.getMessage());
+        ex.printStackTrace(System.err);
+    }
+}
 }
