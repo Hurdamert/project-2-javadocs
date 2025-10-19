@@ -79,6 +79,7 @@
             <BottomNavigationButton fx:id="displayMenu" onAction="#initialize" text="Menu" />
             <BottomNavigationButton fx:id="employeeData" onAction="#initialize" text="Employees" />
             <BottomNavigationButton fx:id="report" onAction="#initialize" text="Reports" />
+            <BottomNavigationButton fx:id="salesAndRestock" onAction="#initialize" text="Sales/Restock" />
          </actionItems>
       </BottomNavigation>
    </bottom>

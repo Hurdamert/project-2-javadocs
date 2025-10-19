@@ -77,10 +77,13 @@ public class ManagerController {
     private BottomNavigationButton employeeData;
     @FXML
     private BottomNavigationButton report; 
+    @FXML
+    private BottomNavigationButton salesAndRestock;
 
     // Ensure we only have one employee page
     private Stage employeeStage;
     private Stage reportStage;
+    private Stage salesAndRestockStage;
 
     private Stage productStage;
 
@@ -116,6 +119,7 @@ public class ManagerController {
 
         employeeData.setOnAction(e -> showEmployeesData());
         report.setOnAction(e -> showReport());
+        salesAndRestock.setOnAction(e -> showSalesAndRestock());
         displayMenu.setOnAction(e -> displayMenu());
 
         unitToggleGroup = new ToggleGroup();
@@ -155,7 +159,7 @@ public class ManagerController {
                 javafx.scene.Parent root = loader.load();
 
                 reportStage = new Stage();
-                reportStage.setTitle("Report");
+                reportStage.setTitle("Reports");
                 reportStage.initOwner(owner);
                 reportStage.initModality(Modality.WINDOW_MODAL);
                 reportStage.setResizable(true);
@@ -164,6 +168,29 @@ public class ManagerController {
             }
             reportStage.show();
             reportStage.toFront();
+            
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private void showSalesAndRestock() {
+        try {
+            if(salesAndRestockStage == null){
+                Stage owner = (Stage) salesAndRestock.getScene().getWindow();
+                javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/com/example/SalesAndRestock.fxml"));
+                javafx.scene.Parent root = loader.load();
+
+                salesAndRestockStage = new Stage();
+                salesAndRestockStage.setTitle("Sales And Restock");
+                salesAndRestockStage.initOwner(owner);
+                salesAndRestockStage.initModality(Modality.WINDOW_MODAL);
+                salesAndRestockStage.setResizable(true);
+                salesAndRestockStage.setScene(new Scene(root, 900, 530));
+                salesAndRestockStage.show();
+            }
+            salesAndRestockStage.show();
+            salesAndRestockStage.toFront();
             
         } catch (Exception ex) {
             ex.printStackTrace();
