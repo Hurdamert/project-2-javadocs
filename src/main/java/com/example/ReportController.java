@@ -19,6 +19,10 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.Scene;
+import javafx.scene.chart.BarChart;
+import javafx.scene.chart.CategoryAxis;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
@@ -38,6 +42,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.GridPane;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
+import javafx.scene.control.DatePicker;
 
 public class ReportController {
 
@@ -54,6 +59,7 @@ public class ReportController {
     @FXML private Button daily;
     @FXML private Button xReport;
     @FXML private Button zReport;
+    @FXML private Button usageChart;
 
     private static final int OPEN_HOUR  = 11;
     private static final int CLOSE_HOUR = 22;
@@ -70,7 +76,7 @@ public class ReportController {
         daily.setOnAction(e -> dailyOrderNRevenuesShow());
         xReport.setOnAction(e -> checkXReport());
         zReport.setOnAction(e -> zReportShow());
-
+        usageChart.setOnAction(e -> usageChartShow());
     }
 
     // help function -- detect the column for each query dynamically
@@ -717,4 +723,93 @@ public void zReportShow() {
         ex.printStackTrace(System.err);
     }
 }
+
+    private void usageChartShow() {
+        Stage stage = new Stage();
+        stage.setTitle("Select Date Range");
+
+        DatePicker startPicker = new DatePicker();
+        DatePicker endPicker = new DatePicker();
+        Button showButton = new Button("Show Chart");
+
+        HBox dateInputs = new HBox(10, new Label("Start:"), startPicker, new Label("End:"), endPicker, showButton);
+        dateInputs.setAlignment(Pos.CENTER);
+        dateInputs.setPadding(new Insets(10));
+
+        BorderPane root = new BorderPane();
+        root.setTop(dateInputs);
+
+        Scene scene = new Scene(root, 900, 600);
+        stage.setScene(scene);
+        stage.show();
+
+        // When button is clicked, show chart in same window
+        showButton.setOnAction(e -> {
+            try {
+                LocalDate startDate = startPicker.getValue();
+                LocalDate endDate = endPicker.getValue();
+
+                if (startDate == null || endDate == null) {
+                    showAlert("Missing Dates", "Please select both a start and end date.");
+                    return;
+                }
+
+                // Database logic same as before:
+                Class.forName("org.postgresql.Driver");
+                Connection conn = DriverManager.getConnection(DB_URL, my.user, my.pswd);
+
+                String sql = """
+                    SELECT 
+                        i.ingredient_name,
+                        i.ingredient_unit,
+                        SUM(pi.ingredient_amount * oi.qty) AS total_used
+                    FROM Orders o
+                    JOIN OrderItems oi ON o.order_id = oi.order_id
+                    JOIN Products p ON oi.product_id = p.product_id
+                    JOIN ProductIngredients pi ON p.product_id = pi.product_id
+                    JOIN Ingredients i ON pi.ingredient_id = i.ingredient_id
+                    WHERE o.date_time BETWEEN ? AND ?
+                    GROUP BY i.ingredient_name, i.ingredient_unit
+                    ORDER BY total_used DESC;
+                """;
+
+                PreparedStatement pstmt = conn.prepareStatement(sql);
+                pstmt.setDate(1, java.sql.Date.valueOf(startDate));
+                pstmt.setDate(2, java.sql.Date.valueOf(endDate));
+                ResultSet rs = pstmt.executeQuery();
+
+                // Create chart
+                CategoryAxis xAxis = new CategoryAxis();
+                NumberAxis yAxis = new NumberAxis();
+                BarChart<String, Number> chart = new BarChart<>(xAxis, yAxis);
+                XYChart.Series<String, Number> series = new XYChart.Series<>();
+
+                while (rs.next()) {
+                    String ingredient = rs.getString("ingredient_name");
+                    double used = rs.getDouble("total_used");
+                    series.getData().add(new XYChart.Data<>(ingredient, used));
+                }
+
+                chart.getData().clear();
+                chart.getData().add(series);
+
+                // Put chart in center of window
+                root.setCenter(chart);
+
+                conn.close();
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                showAlert("Error", "Unable to load chart: " + ex.getMessage());
+            }
+        });
+    }
+
+    private void showAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
 }
