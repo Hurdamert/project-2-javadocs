@@ -96,7 +96,9 @@ public class AppController {
         try {
             // Build the connection
             Class.forName("org.postgresql.Driver");
+            // TODO CHANGE BACK TO POSTGRES
             Connection conn = DriverManager.getConnection(DB_URL, my.user, my.pswd);
+            //Connection conn = DriverManager.getConnection(DB_URL);
 
             // Create statement
             Statement stmt = conn.createStatement();

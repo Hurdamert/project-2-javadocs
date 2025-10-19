@@ -8,6 +8,7 @@
 <?import javafx.scene.chart.NumberAxis?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.RadioButton?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextArea?>
@@ -38,13 +39,21 @@
                   <Label text="Add / Update Inventory" />
                   <TextField fx:id="nameField" promptText="Item name" />
                   <TextField fx:id="qtyField" promptText="Quantity (int)" />
+                  <TextField fx:id="restockQtyField" promptText="Restock Quantity (int)" />
+                  <TextField fx:id="fullQtyField" promptText="Full Quantity (int)" />
+                  <HBox spacing="8">
+                     <children>
+                        <RadioButton fx:id="gSelector" mnemonicParsing="false" text="g" selected="true"/>
+                        <RadioButton fx:id="mlSelector" mnemonicParsing="false" text="ml" />
+                     </children>
+                  </HBox>
                   <HBox spacing="8">
                      <children>
                         <Button fx:id="addButton" text="Add" />
                         <Button fx:id="updateButton" text="Update" />
                      </children>
                   </HBox>
-                  <TextArea prefHeight="100.0" prefWidth="200.0" text="Select a row from the table to begin updating it. If adding an ingredient to the inventory, simply edit the text entry fields." wrapText="true" />
+                  <TextArea prefHeight="150.0" prefWidth="200.0" text="Select a row from the table to begin updating it. If adding an ingredient to the inventory, simply edit the text entry fields. When performing an update, only the first two entry fields should be used." wrapText="true" />
                </children>
                <padding>
                   <Insets top="10.0" />

@@ -19,11 +19,13 @@ import javafx.scene.Scene;
 import javafx.scene.chart.BarChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
+import javafx.scene.control.RadioButton;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Toggle;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.BorderPane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
@@ -43,6 +45,18 @@ public class ManagerController {
     private TextField nameField;
     @FXML
     private TextField qtyField;
+
+    @FXML
+    private TextField restockQtyField;
+    @FXML
+    private TextField fullQtyField;
+
+    @FXML
+    private ToggleGroup unitToggleGroup;
+    @FXML
+    private RadioButton gSelector;
+    @FXML
+    private RadioButton mlSelector;
 
     @FXML
     private Button addButton;
@@ -103,6 +117,10 @@ public class ManagerController {
         employeeData.setOnAction(e -> showEmployeesData());
         report.setOnAction(e -> showReport());
         displayMenu.setOnAction(e -> displayMenu());
+
+        unitToggleGroup = new ToggleGroup();
+        gSelector.setToggleGroup(unitToggleGroup);
+        mlSelector.setToggleGroup(unitToggleGroup);
     }
 
     @FXML
@@ -158,25 +176,34 @@ public class ManagerController {
     private void onAddInventory() {
         String name = nameField.getText().trim();
         String qtyStr = qtyField.getText().trim();
-        if (name.isBlank() || qtyStr.isBlank()) {
+        String restockQtyStr = restockQtyField.getText().trim();
+        String fullQtyStr = fullQtyField.getText().trim();
+        String unit = getSelectedUnit().trim();
+        if (name.isBlank() || qtyStr.isBlank() || restockQtyStr.isBlank() || fullQtyStr.isBlank() || unit.isBlank()) {
             //status("Enter name and quantity.");
             return;
         }
         int qty;
+        int restockQty;
+        int fullQty;
         try {
             qty = Integer.parseInt(qtyStr);
+            restockQty = Integer.parseInt(restockQtyStr);
+            fullQty = Integer.parseInt(fullQtyStr);
         } catch (NumberFormatException e) {
             //status("Quantity must be an integer.");
-            System.out.println();
             return;
         }
 
-        String sql = "INSERT INTO ingredients (ingredient_name, quantity) VALUES (?, ?)";
+        String sql = "INSERT INTO ingredients (ingredient_name, quantity, minimum_quantity, full_quantity, ingredient_unit) VALUES (?, ?, ?, ?, ?)";
 
         try (Connection conn = DriverManager.getConnection(DB_URL, my.user, my.pswd);
                 PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, name);
             ps.setInt(2, qty);
+            ps.setInt(3, restockQty);
+            ps.setInt(4, fullQty);
+            ps.setString(5, unit);
             System.out.println(ps);
             ps.executeUpdate();
 
@@ -285,6 +312,8 @@ public class ManagerController {
     private void clearForm() {
         nameField.clear();
         qtyField.clear();
+        restockQtyField.clear();
+        fullQtyField.clear();
         inventoryTable.getSelectionModel().clearSelection();
     }
 
@@ -342,5 +371,14 @@ public class ManagerController {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
+    }
+    
+    public String getSelectedUnit() {
+        Toggle selectedToggle = unitToggleGroup.getSelectedToggle();
+        if (selectedToggle != null) {
+            RadioButton selectedButton = (RadioButton) selectedToggle;
+            return selectedButton.getText(); // "g" or "ml"
+        }
+        return null;
     }
 }

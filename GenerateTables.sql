@@ -78,7 +78,7 @@ CREATE TABLE OrderItems(
 
 -- inserting categories
 INSERT INTO Categories (category_name) VALUES
-('Milky Series'), ('Fresh Milk Series'), ('Fruity Beverages'), ('Non Caffeinated');
+('Milky Series'), ('Fresh Milk Series'), ('Fruity Beverages'), ('Non Caffeinated'), ('Seasonal');
 
 -- inserting products
 -- Milky Series
@@ -119,7 +119,7 @@ INSERT INTO Products (product_name, product_price, category_id) VALUES
 
 -- inserting Ingredients
 INSERT INTO Ingredients (ingredient_name, quantity, minimum_quantity, full_quantity, ingredient_unit) VALUES
-('Black Tea', 500000, 100000, 500000, 'g'),
+('Black Tea', 500000, 100000, 500000, 'ml'),
 ('Green Tea', 250000, 50000, 250000, 'ml'),
 ('Oolang Tea', 100000, 25000, 100000, 'ml'),
 ('Milk', 300000, 50000, 300000, 'ml'),
