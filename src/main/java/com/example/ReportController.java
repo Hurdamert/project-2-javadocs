@@ -15,6 +15,19 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.control.cell.CheckBoxTableCell;
+import javafx.scene.control.cell.TextFieldTableCell;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.GridPane;
+import java.time.LocalDateTime;
+import java.time.LocalDate;
+
+
+
+
+
 
 import java.sql.*;
 
@@ -35,7 +48,9 @@ public class ReportController {
     @FXML private Button daily;
     @FXML private Button zReport;
 
-
+    private static final int OPEN_HOUR  = 11;
+    private static final int CLOSE_HOUR = 22;
+    
     @FXML
     private void initialize() {
         weeklySaleHistory.setOnAction(e -> weeklySaleHistoryShow());
@@ -360,56 +375,173 @@ public class ReportController {
         }
     }
 
-    private void zReportShow() {
-        try{
-            Class.forName("org.postgresql.Driver");
-            Connection conn = DriverManager.getConnection(DB_URL, my.user, my.pswd);
-            
-            // Create statement
-            Statement stmt = conn.createStatement();
-            
-            // Run sql query
-            String sqlStatement = """
-                                    SELECT date_part('isoyear', date_time)::int AS Years, date_part('week', date_time)::int AS Weeks, COUNT(*) AS orders FROM orders
-                                    GROUP BY Years, Weeks
-                                    ORDER BY Years, Weeks
-                                                        """;
-            ResultSet rs = stmt.executeQuery(sqlStatement);
+    // Signature class for employee signatures
+    public static class SignatureRow {
+    private final IntegerProperty employeeId = new SimpleIntegerProperty();
+    private final StringProperty  employeeName = new SimpleStringProperty();
+    private final StringProperty  signature = new SimpleStringProperty("");
+    private final BooleanProperty signed = new SimpleBooleanProperty(false);
 
-            TableView<ObservableList<String>> tv = buildTableFromResultSet(rs);
-
-            Stage stage = new Stage();
-            stage.initModality(Modality.WINDOW_MODAL);
-            stage.setTitle("Z Report");
-            BorderPane root = new BorderPane(tv);
-            stage.setScene(new Scene(root, 900, 600));
-            stage.show();
-
-            conn.close();
-        } catch (Exception e) {
-            // TODO: handle exception
-            e.printStackTrace();
-            e.getMessage();
+    public SignatureRow(int id, String name) {
+        employeeId.set(id);
+        employeeName.set(name);
+    }
+    public int getEmployeeId() { 
+        return employeeId.get(); 
         }
+    public String getEmployeeName() { 
+        return employeeName.get(); 
+        }
+    public StringProperty signatureProperty() { 
+        return signature; 
+        }
+    public BooleanProperty signedProperty() {
+            return signed; 
+            }
+    public String getSignature() {
+            return signature.get(); 
+            }
+    public boolean isSigned() { 
+        return signed.get();
+            }
     }
 
+    //help convert double to String
+    private static String currency(double x) {
+    if (x == 0.0){
+        return "$0.00";
+    } 
+    return java.text.NumberFormat.getCurrencyInstance(java.util.Locale.US).format(x);
+    }
 
+    private void zReportShow() {
+        //Compute the business day window
+        LocalDate today = LocalDate.now();
+        LocalDateTime start = today.atTime(OPEN_HOUR, 0, 0);
+        LocalDateTime end   = today.atTime(CLOSE_HOUR, 0, 0);
 
+        Stage stage = new Stage();
 
+        //Query: sales + tax for the window
+        double grossSales   = 0.0;
+        double taxCollected = 0.0; 
+        double totalSales   = 0.0;
 
+        //Employees for signatures
+        ObservableList<SignatureRow> sigRows = FXCollections.observableArrayList();
 
+        // Connect to database
+        try (Connection conn = DriverManager.getConnection(DB_URL, my.user, my.pswd)) {
 
+            // Sales & tax
+            String aggSql = """
+                SELECT
+                    COALESCE(SUM(sub_total), 0) AS gross_sales
+                FROM orders
+                WHERE date_time >= ? AND date_time < ?
+            """;
+            try (PreparedStatement ps = conn.prepareStatement(aggSql)) {
+                ps.setTimestamp(1, Timestamp.valueOf(start));
+                ps.setTimestamp(2, Timestamp.valueOf(end));
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        grossSales   = rs.getDouble("gross_sales");
+                        taxCollected = grossSales * 0.05;
+                        totalSales   = grossSales + taxCollected;
+                    }
+                }
+            }
 
+            // Employees (adjust filter to match your schema; this uses "active = true")
+            String empSql = """
+                SELECT employee_id,
+                    COALESCE(employee_name,'') AS name
+                FROM employees
+                WHERE COALESCE(status, 'Active') = 'Active'
+                ORDER BY name
+            """;
+            try (PreparedStatement ps = conn.prepareStatement(empSql);
+                ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    sigRows.add(new SignatureRow(
+                        rs.getInt("employee_id"),
+                        rs.getString("name").trim()
+                    ));
+                }
+            }
 
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            new Alert(Alert.AlertType.ERROR, "Failed to load Z-Report data.").showAndWait();
+            return;
+        }
 
+        //Build the UI
+        Label title = new Label("Z-Report");
+        title.getStyleClass().add("h2");
 
+        Label range = new Label(String.format(
+            "Business day: %s %02d:00 — %02d:00",
+            today, OPEN_HOUR, CLOSE_HOUR
+        ));
+        range.getStyleClass().add("subtle");
 
+        // Sales & Tax box
+        GridPane salesGrid = new GridPane();
+        salesGrid.setHgap(16);
+        salesGrid.setVgap(8);
 
+        Label grossLbl = new Label("Gross Sales (pre-tax):");
+        Label taxLbl = new Label("Tax Collected:");
+        Label totalLbl = new Label("Total Sales (with tax):");
 
+        Label grossVal = new Label(currency(grossSales));
+        Label taxVal = new Label(currency(taxCollected));
+        Label totalVal = new Label(currency(totalSales));
 
+        salesGrid.addRow(0, grossLbl, grossVal);
+        salesGrid.addRow(1, taxLbl,   taxVal);
+        salesGrid.addRow(2, totalLbl, totalVal);
 
+        TitledPane salesPane = new TitledPane("Sales & Tax Information", salesGrid);
+        salesPane.setExpanded(true);
 
+        // Employee Signatures table
+        TableView<SignatureRow> sigTable = new TableView<>(sigRows);
+        sigTable.setEditable(true);
 
+        TableColumn<SignatureRow, String> empCol = new TableColumn<>("Employee");
+        empCol.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().getEmployeeName()));
+        empCol.setPrefWidth(260);
 
+        TableColumn<SignatureRow, String> sigCol = new TableColumn<>("Signature");
+        sigCol.setCellValueFactory(cd -> cd.getValue().signatureProperty());
+        sigCol.setCellFactory(TextFieldTableCell.forTableColumn());
+        sigCol.setPrefWidth(220);
 
+        TableColumn<SignatureRow, Boolean> signedCol = new TableColumn<>("Signed");
+        signedCol.setCellValueFactory(cd -> cd.getValue().signedProperty());
+        signedCol.setCellFactory(tc -> {
+            CheckBoxTableCell<SignatureRow, Boolean> cell = new CheckBoxTableCell<>();
+            cell.setAlignment(Pos.CENTER);
+            return cell;
+        });
+        signedCol.setPrefWidth(90);
+
+        sigTable.getColumns().setAll(empCol, sigCol, signedCol);
+
+        TitledPane sigPane = new TitledPane("Employee Signatures", sigTable);
+        sigPane.setExpanded(true);
+
+        VBox rootBox = new VBox(12, title, range, salesPane, sigPane);
+        rootBox.setPadding(new Insets(18));
+
+        stage = new Stage();
+        stage.setTitle("Z-Report");
+        stage.initModality(Modality.WINDOW_MODAL);
+        stage.setResizable(true);
+        
+        stage.setScene(new Scene(new BorderPane(rootBox), 720, 560));
+        stage.show();
+    }
 }
