@@ -31,6 +31,8 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 import javafx.stage.Modality;
 import javafx.scene.control.Alert;
 import javafx.stage.Stage;
@@ -39,6 +41,7 @@ import javafx.geometry.Pos;
 import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.GridPane;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
@@ -145,6 +148,12 @@ public class ReportController {
         }
     }
 
+    private Label title(String text) {
+        Label l = new Label(text);
+        l.setFont(Font.font("Times New Roman", FontWeight.BOLD, 16));
+        return l;
+    }
+
     private void checkXReport() {
         try{
             Class.forName("org.postgresql.Driver");
@@ -203,14 +212,30 @@ public class ReportController {
 
             TableView<ObservableList<String>> tv4 = buildTableFromResultSet(rs4);
             
-            VBox content = new VBox(10, new Label("Summary(Today to Now)"), tv, new Label("Hourly Breakdown(Today to Now)"), tv3, new Label("Top 10 Items(Today to Now)"), tv2, new Label("Best Sale Category(Today to Now)"), tv4);
+            VBox content = new VBox(10, title("Summary(Today to Now)"), tv, title("Hourly Breakdown(Today to Now)"), tv3, title("Top 10 Items(Today to Now)"), tv2, title("Best Sale Category(Today to Now)"), tv4);
             content.setPrefSize(900, 700);
 
+            VBox.setVgrow(tv,  Priority.ALWAYS);
+            VBox.setVgrow(tv2, Priority.ALWAYS);
+            VBox.setVgrow(tv3, Priority.ALWAYS);
+            VBox.setVgrow(tv4, Priority.ALWAYS);
 
+            // Auto fit the table column width
+            tv.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+            tv2.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+            tv3.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+            tv4.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+            
+            ScrollPane sp = new ScrollPane(content);
+            sp.setFitToWidth(true);
+            sp.setFitToHeight(true);
+
+            BorderPane root = new BorderPane(sp);
             Stage stage = new Stage();
             stage.initModality(Modality.WINDOW_MODAL);
-            stage.setTitle("X-Report");
-            stage.setScene(new Scene(new BorderPane(new ScrollPane(content)), 950, 750));
+            String today = LocalDate.now().toString();
+            stage.setTitle("X-Report  " + today);
+            stage.setScene(new Scene(root, 950, 750));
             stage.show();
 
             conn.close();
