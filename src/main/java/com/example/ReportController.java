@@ -178,7 +178,7 @@ public class ReportController {
 
             TableView<ObservableList<String>> tv2 = buildTableFromResultSet(rs2);
 
-            // Check today's top 10 product
+            // Check per hour sale
             String sqlStatement3 = """
                                     SELECT EXTRACT(HOUR FROM date_time)::int AS per_hour, COUNT(*) AS orders, ROUND(SUM(sub_total),2) AS gross_sales FROM orders
                                     WHERE date_time >= CURRENT_DATE AND date_time < NOW()
@@ -188,8 +188,22 @@ public class ReportController {
             ResultSet rs3 = stmt.executeQuery(sqlStatement3);
 
             TableView<ObservableList<String>> tv3 = buildTableFromResultSet(rs3);
+
+            // Check the best sale category
+            String sqlStatement4 = """
+                                    SELECT c.category_name, SUM(oi.qty) AS qty_sold, ROUND(SUM(oi.qty * COALESCE(oi.item_price, p.product_price)), 2) AS sales FROM orderitems oi
+                                    JOIN orders o ON o.order_id = oi.order_id
+                                    JOIN products p ON p.product_id = oi.product_id
+                                    JOIN categories c ON c.category_id = p.category_id
+                                    WHERE o.date_time >= CURRENT_DATE AND o.date_time < NOW()
+                                    GROUP BY c.category_name
+                                    ORDER BY sales DESC;
+                                    """;
+            ResultSet rs4 = stmt.executeQuery(sqlStatement4);
+
+            TableView<ObservableList<String>> tv4 = buildTableFromResultSet(rs4);
             
-            VBox content = new VBox(10, new Label("Summary (Today to Now)"), tv, new Label("Hourly Breakdown"), tv3, new Label("Top 10 Items"), tv2);
+            VBox content = new VBox(10, new Label("Summary(Today to Now)"), tv, new Label("Hourly Breakdown(Today to Now)"), tv3, new Label("Top 10 Items(Today to Now)"), tv2, new Label("Best Sale Category(Today to Now)"), tv4);
             content.setPrefSize(900, 700);
 
 
