@@ -29,6 +29,11 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
+/**
+  * The ManagerController class allows managers to manage the inventory
+  * and acts as the homepage for the other manager features
+  * @author Jake Hewett
+*/
 public class ManagerController {
 
     // --- FXML refs (from ManagerPage.fxml)
@@ -93,6 +98,10 @@ public class ManagerController {
 
     private final ObservableList<InventoryItem> inventory = FXCollections.observableArrayList();
 
+    /**
+    * The initialize function sets actions to each of the buttons on the manager page,
+    * as well as initializes the inventory table and chart
+    */
     @FXML
     private void initialize() {
         // Table column bindings
@@ -127,6 +136,9 @@ public class ManagerController {
         mlSelector.setToggleGroup(unitToggleGroup);
     }
 
+    /**
+     * Displays the employee data window when the corresponding button is clicked.
+     */
     @FXML
     private void showEmployeesData() {
         try {
@@ -151,6 +163,9 @@ public class ManagerController {
         }
     }
 
+    /**
+     * Displays the reports window when the corresponding button is clicked.
+     */
     private void showReport() {
         try {
             if(reportStage == null){
@@ -174,6 +189,9 @@ public class ManagerController {
         }
     }
 
+    /**
+     * Displays the sales and restock window when the corresponding button is clicked.
+     */
     private void showSalesAndRestock() {
         try {
             if(salesAndRestockStage == null){
@@ -199,6 +217,9 @@ public class ManagerController {
 
     // --- UI actions
 
+    /**
+     * Handles the addition of a new inventory item when the add button is clicked.
+     */
     @FXML
     private void onAddInventory() {
         String name = nameField.getText().trim();
@@ -244,6 +265,9 @@ public class ManagerController {
         }
     }
 
+    /**
+     * Handles the update of an existing inventory item when the update button is clicked.
+     */
     @FXML
     private void onUpdateInventory() {
         InventoryItem sel = inventoryTable.getSelectionModel().getSelectedItem();
@@ -299,8 +323,9 @@ public class ManagerController {
         }
     }
 
-    // --- Data loaders
-
+    /**
+     * Refreshes the inventory list from the database.
+     */
     private void refreshInventory() {
         inventory.clear();
 
@@ -323,6 +348,9 @@ public class ManagerController {
         }
     }
 
+    /**
+     * Refreshes the supply chart to reflect current inventory levels.
+     */
     private void refreshChart() {
         supplyChart.getData().clear();
         XYChart.Series<String, Number> s = new XYChart.Series<>();
@@ -336,6 +364,9 @@ public class ManagerController {
     //     statusLabel.setText(msg);
     // }
 
+    /**
+     * Clears the input form fields.
+     */
     private void clearForm() {
         nameField.clear();
         qtyField.clear();
@@ -344,7 +375,9 @@ public class ManagerController {
         inventoryTable.getSelectionModel().clearSelection();
     }
 
-    // --- model for the TableView
+    /**
+     * Model class for inventory items displayed in the TableView.
+     */
     public static class InventoryItem {
         private final Integer id; // can be null if table lacks id column
         private final StringProperty name = new SimpleStringProperty();
@@ -377,6 +410,9 @@ public class ManagerController {
         }
     }
 
+    /**
+     * Displays the menu window when the corresponding button is clicked.
+     */
     private void displayMenu() {
         try {
             if(productStage == null){
@@ -400,6 +436,10 @@ public class ManagerController {
         }
     }
     
+    /**
+     * Gets the selected unit from the radio buttons.
+     * @return null
+     */
     public String getSelectedUnit() {
         Toggle selectedToggle = unitToggleGroup.getSelectedToggle();
         if (selectedToggle != null) {

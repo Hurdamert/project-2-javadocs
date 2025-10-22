@@ -21,6 +21,13 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
 
 
+
+/**
+ * The MenuController class handles the management of menu items within the application.
+ * It allows adding, modifying, and deleting products from the database, as well as
+ * associating ingredients and categories to each product.
+ * @author Jake Hewett
+ */
 public class MenuController {  
             // --- DB config
     private static final String DB_URL = "jdbc:postgresql://csce-315-db.engr.tamu.edu/gang_00_db";
@@ -52,6 +59,10 @@ public class MenuController {
 
     private ArrayList<ProductIngredient> productIngredients = new ArrayList<>();
 
+    /**
+     * Initializes the MenuController when the FXML is loaded.
+     * Sets up table columns, event listeners, and loads initial data from the database.
+     */
     @FXML
     private void initialize() {
         rsId.setCellValueFactory(new PropertyValueFactory<>("productId"));
@@ -76,7 +87,12 @@ public class MenuController {
         productIngredientList.setItems(observableproductIngredients);
     }
 
-    // Use this to finsih the Async function
+    /**
+     * Executes background tasks on a separate thread to prevent UI freezing.
+     * 
+     * @param ioWork  The database or IO task to execute asynchronously.
+     * @param uiAfter The UI update to perform after IO task completion.
+     */
     private void runAsync(Runnable ioWork, Runnable uiAfter) {
         // Disable button, avoid to click the button for multiple times(will cause program crashed)
         addButton.setDisable(true);
@@ -110,6 +126,9 @@ public class MenuController {
     private ObservableList<Ingredient> tempIngredients = FXCollections.observableArrayList();
     private ObservableList<Category> tempCategories = FXCollections.observableArrayList();
 
+    /**
+     * Loads all products, ingredients, and categories from the database into memory.
+     */
     private void loadData(){
          // Build the connection
         runAsync(() -> {
@@ -176,6 +195,9 @@ public class MenuController {
         }, null);
     }
 
+    /**
+     * Adds a new product to the database and associates it with its ingredients and category.
+     */
     private void addData() {
         if (nameField.getText().isBlank() || priceField.getText().isBlank() || productIngredients.isEmpty()) {
             System.out.println("Not all fields have been completed.");
@@ -241,6 +263,9 @@ public class MenuController {
         
     }
 
+    /**
+     * Deletes the selected product and its associated ingredients from the database.
+     */
     private void deleteData() {
         ProductRow dele = table.getSelectionModel().getSelectedItem();
         if(dele == null){
@@ -287,6 +312,9 @@ public class MenuController {
 
     }
 
+    /**
+     * Updates the selected product’s name and price in the database.
+     */
     private void modify() {
         String name = nameField.getText().trim();
         Float price = Float.parseFloat(priceField.getText().trim());
@@ -328,6 +356,9 @@ public class MenuController {
         
     }
 
+    /**
+     * Adds an ingredient and its amount to the current product being created.
+     */
     private void addProductIngredient() {
         Ingredient selected = ingredientComboBox.getSelectionModel().getSelectedItem();
         if (selected != null && !ingredientAmountField.getText().isBlank()) {
@@ -339,6 +370,9 @@ public class MenuController {
         }
     }
 
+    /**
+     * Clears all currently added product ingredients from the list.
+     */
     private void clearProductIngredients() {
         productIngredients.clear();
         observableproductIngredients.clear();
