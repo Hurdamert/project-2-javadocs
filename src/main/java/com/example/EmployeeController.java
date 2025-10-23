@@ -1,28 +1,28 @@
 package com.example;
 
-import javafx.application.Platform;
-import javafx.beans.property.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.scene.chart.BarChart;
-import javafx.scene.chart.XYChart;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.VBox;
-import javafx.stage.Modality;
-import javafx.stage.Stage;
 
-import java.sql.*;
-
-import com.gluonhq.charm.glisten.control.BottomNavigationButton;
+/**
+  * The EmployeeController class sets up all functions to make the employee window interactive
+  * @author Evan Ganske
+*/
 
 public class EmployeeController {
 
-        // --- DB config
+    // --- DB config
     private static final String DB_URL = "jdbc:postgresql://csce-315-db.engr.tamu.edu/gang_00_db";
     private final dbSetup my = new dbSetup();
 
@@ -43,6 +43,11 @@ public class EmployeeController {
     // Observe and fecth the data in real time
     private final ObservableList<EmployeeRow> data = FXCollections.observableArrayList();
 
+
+    /**
+    * Initializer function to set up the employees table
+    * and set up actions for buttons
+    */
     @FXML
     private void initialize() {
         rsId.setCellValueFactory(new PropertyValueFactory<>("employeeId"));
@@ -102,6 +107,10 @@ public class EmployeeController {
 
     private ObservableList<EmployeeRow> tempHub = FXCollections.observableArrayList(); // store the data we fetch from database by using other thread, this should transfer itself to data_Collection
 
+    /**
+    * Method to clear data from the employee table, fetch all current data,
+    * and display that data in the table
+    */
     private void loadData(){
          // Build the connection
         try {
@@ -132,6 +141,11 @@ public class EmployeeController {
 
     }
 
+    /**
+    * Method that pulls user input from text fields,
+    * adds that user entry to the underlying database,
+    * then calls loadData() to get the updated table view
+    */
     private void addData() {
         String name = nameField.getText().trim();
         String role = roleField.getText().trim();
@@ -167,6 +181,11 @@ public class EmployeeController {
         
     }
 
+
+    /**
+    * Method to delete the table row that has been selected.
+    * Deletes the row from the underlying database, then refreshes the table
+    */
     private void deleteData() {
         EmployeeRow dele = table.getSelectionModel().getSelectedItem();
         if(dele == null){
@@ -201,6 +220,12 @@ public class EmployeeController {
 
     }
 
+    /**
+    * Method to modify a row of the employee table.
+    * Pulls input from text entry fields
+    * and replaces the corresponding attributes for the employee in the underlying database table.
+    * Once the update is complete, the table is refreshed.
+    */
     private void modify() {
         String name = nameField.getText().trim();
         String role = roleField.getText().trim();
