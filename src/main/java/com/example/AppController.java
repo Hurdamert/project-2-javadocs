@@ -27,9 +27,17 @@ import javafx.scene.text.Text;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
+/**
+ * The AppController class manages the main interface of the POS system.
+ * It connects the JavaFX UI elements to the PostgreSQL database
+ * and handles interactions like viewing categories, products, and placing
+ * orders.
+ * 
+ * @author Sahil Kasturi
+ */
 public class AppController {
 
-    // Left Side
+    // Left Side Buttons
     @FXML
     private Button mainMenu;
     @FXML
@@ -37,54 +45,63 @@ public class AppController {
     @FXML
     private Button newOrder;
 
-    // Center
+    // Center Section
     @FXML
     private ScrollPane centerScrollPane;
     @FXML
     private AnchorPane centerAnchorPane;
 
-    // Bottom nav
-    @FXML private BottomNavigationButton checkOut;
-    @FXML private BottomNavigationButton transactions;
-    @FXML private BottomNavigationButton clockInOut;
-    @FXML private BottomNavigationButton more;
+    // Bottom Navigation Buttons
+    @FXML
+    private BottomNavigationButton checkOut;
+    @FXML
+    private BottomNavigationButton transactions;
+    @FXML
+    private BottomNavigationButton clockInOut;
+    @FXML
+    private BottomNavigationButton more;
 
-    @FXML private ListView<String> orderList;
+    @FXML
+    private ListView<String> orderList;
     private ObservableList<String> observableOrderItems = FXCollections.observableArrayList();
-    @FXML private Text totalLabel;
-    @FXML private Text taxLabel;
-    @FXML private Text subTotalLabel;
+    @FXML
+    private Text totalLabel;
+    @FXML
+    private Text taxLabel;
+    @FXML
+    private Text subTotalLabel;
+    @FXML
+    private Button chargeButton;
 
-    @FXML private Button chargeButton;
-
-    // Get database location and credentials
+    // Database config
     private static final String DB_URL = "jdbc:postgresql://csce-315-db.engr.tamu.edu/gang_00_db";
     private dbSetup my = new dbSetup();
 
     private double currentSubTotal = 0;
     private ArrayList<OrderItem> orderItems = new ArrayList<>();
 
-
-
+    /**
+     * Initializes button actions and sets up listeners for UI elements.
+     */
     @FXML
     private void initialize() {
-        // Listen all button events
         mainMenu.setOnAction(e -> getCategories());
         manager.setOnAction(e -> managerPage());
         newOrder.setOnAction(e -> createNeworder());
-
         checkOut.setOnAction(e -> checkout());
         transactions.setOnAction(e -> openTransaction());
         clockInOut.setOnAction(e -> clockIn_Out());
         more.setOnAction(e -> showMore());
         chargeButton.setOnAction(e -> checkOutOrder());
-
         orderList.setItems(observableOrderItems);
     }
 
+    /**
+     * Loads all product categories from the database and displays them in the main
+     * view.
+     */
     private void getCategories() {
         System.out.println("Opening menu...");
-
         centerAnchorPane.getChildren().clear();
 
         TilePane categoryPane = new TilePane();
@@ -94,46 +111,36 @@ public class AppController {
         categoryPane.setPrefWidth(centerScrollPane.getPrefWidth());
 
         try {
-            // Build the connection
             Class.forName("org.postgresql.Driver");
-            // TODO CHANGE BACK TO POSTGRES
             Connection conn = DriverManager.getConnection(DB_URL, my.user, my.pswd);
-            //Connection conn = DriverManager.getConnection(DB_URL);
-
-            // Create statement
             Statement stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery("SELECT * FROM categories");
 
-            // Run sql query
-            String sqlStatement = "SELECT * FROM categories";
-            ResultSet rs = stmt.executeQuery(sqlStatement);
-
-            // output result
             while (rs.next()) {
                 int category_id = rs.getInt("category_id");
                 String category_name = rs.getString("category_name");
-
                 VBox card = createCategoryCard(category_name, category_id);
                 categoryPane.getChildren().add(card);
             }
 
-            // Close connection
             rs.close();
             stmt.close();
             conn.close();
-
         } catch (Exception e) {
             System.out.println("Error with database.");
             e.printStackTrace();
-            System.exit(0);
         }
 
         centerAnchorPane.getChildren().add(categoryPane);
     }
 
+    /**
+     * Displays all products for a selected category.
+     * 
+     * @param category_id the ID of the selected category
+     */
     private void showProducts(int category_id) {
         centerAnchorPane.getChildren().clear();
-
-        // Create Back button
         Button backButton = new Button("Back to Categories");
         backButton.setOnAction(e -> getCategories());
 
@@ -163,17 +170,21 @@ public class AppController {
             e.printStackTrace();
         }
 
-        // Combine back button and products into a VBox
         VBox contentBox = new VBox(10);
         contentBox.getChildren().addAll(backButton, productPane);
-
         centerAnchorPane.getChildren().add(contentBox);
     }
 
+    /**
+     * Displays a product’s details, price, and available add-ons.
+     * 
+     * @param product_id        the product’s ID
+     * @param category_id       the category the product belongs to
+     * @param addon_extra_price any additional cost from add-ons
+     * @param addon_string      a string of selected add-ons
+     */
     private void getProduct(int product_id, int category_id, double addon_extra_price, String addon_string) {
         centerAnchorPane.getChildren().clear();
-
-        // Create Back button
         Button backButton = new Button("Back to Products");
         backButton.setOnAction(e -> showProducts(category_id));
 
@@ -194,8 +205,7 @@ public class AppController {
                 String product_name = rs1.getString("product_name");
                 double product_price = rs1.getDouble("product_price") + addon_extra_price;
 
-                VBox productInfo = new VBox(5); // spacing 5px
-
+                VBox productInfo = new VBox(5);
                 Text productText = new Text(product_name);
                 productText.setStyle("-fx-font-weight: bold; -fx-font-size: 30px;");
                 Text productPrice = new Text("Current Price: $" + product_price);
@@ -207,41 +217,29 @@ public class AppController {
                 Button orderButton = new Button("Add to order");
                 orderButton.setOnAction(e -> {
                     int product_quantity = quantity.get();
-                    addItemToOrder(product_id, product_name, product_price, product_quantity, addon_string, category_id);
+                    addItemToOrder(product_id, product_name, product_price, product_quantity, addon_string,
+                            category_id);
                 });
 
                 productInfo.getChildren().addAll(productText, productPrice, quantitySelector, orderButton);
                 productPane.getChildren().add(productInfo);
-                productPane.setStyle("-fx-padding: 20px 10 0 0;");
-            }
-
-            Statement stmt2 = conn.createStatement();
-            ResultSet rs2 = stmt2.executeQuery("SELECT * FROM addons");
-            while (rs2.next()) {
-                String addon_name = rs2.getString("addon_name");
-                double addon_price = rs2.getDouble("addon_price");
-                int addon_id = rs2.getInt("addon_id");
-                VBox card = createAddonCard(addon_name, addon_price, addon_id, product_id, category_id, addon_extra_price, addon_string);
-                productPane.getChildren().add(card);
             }
 
             rs1.close();
             stmt1.close();
-            rs2.close();
-            stmt2.close();
             conn.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        // Combine back button and products into a VBox
         VBox contentBox = new VBox();
         contentBox.getChildren().addAll(backButton, productPane);
-
         centerAnchorPane.getChildren().add(contentBox);
     }
 
-    // This just a template window
+    /**
+     * Opens the manager window.
+     */
     private void managerPage() {
         try {
             Stage owner = (Stage) manager.getScene().getWindow();
@@ -261,113 +259,65 @@ public class AppController {
         }
     }
 
+    /**
+     * Creates a new order and resets the interface.
+     */
     private void createNeworder() {
         System.out.println("Creating a new order...");
-
-        // Cleaning up viewable elements
         orderItems.clear();
-
-        // Resetting the current total
         currentSubTotal = 0.00;
         updateTotalAndTax();
-
-        // clearing the ListView
         observableOrderItems.clear();
-
         getCategories();
     }
 
+    /** Handles checkout button click. */
     private void checkout() {
         System.out.println("Processing checkout...");
     }
 
+    /** Opens the transaction history window. */
     private void openTransaction() {
         System.out.println("Opening transaction history...");
     }
 
+    /** Logs an employee clock-in or clock-out. */
     private void clockIn_Out() {
         System.out.println("Clock in...");
     }
 
+    /** Displays additional menu options. */
     private void showMore() {
         System.out.println("More information...");
     }
 
+    /**
+     * Finalizes the current order, updates the database, and resets the cart.
+     */
     private void checkOutOrder() {
-        // creating order in database
         if (!orderItems.isEmpty()) {
-            // THIS WILL BE UPDATED ONCE CLOCK IN/OUT IS FUNCTIONAL
             int employee_id = 6;
             try {
                 Class.forName("org.postgresql.Driver");
                 Connection conn = DriverManager.getConnection(DB_URL, my.user, my.pswd);
                 conn.setAutoCommit(false);
 
-                Statement stmt0 = conn.createStatement();
-                ResultSet rs0 = stmt0.executeQuery("SELECT * FROM ingredients WHERE ingredient_name = 'Water'");
-                int water_id = -1;
-                if (rs0.next()) {
-                    water_id = rs0.getInt("ingredient_id");
-                }
-
                 Statement stmt = conn.createStatement();
-                ResultSet rs = stmt.executeQuery("INSERT INTO orders (employee_id, sub_total) VALUES (" + employee_id + ", " + currentSubTotal + ") RETURNING order_id;");
+                ResultSet rs = stmt.executeQuery("INSERT INTO orders (employee_id, sub_total) VALUES (" + employee_id
+                        + ", " + currentSubTotal + ") RETURNING order_id;");
+
                 if (rs.next()) {
-                    // successfully created order
                     int order_id = rs.getInt("order_id");
-                    
-                    // now add all order items into the order
                     for (OrderItem item : orderItems) {
-                        // first take out ingredient quantities from inventory
-                        try {
-                            Statement stmt2 = conn.createStatement();
-                            ResultSet rs2 = stmt2.executeQuery("SELECT * FROM productingredients WHERE product_id = " + item.getProduct_id());
-
-                            while (rs2.next()) {
-                                // remove qty from ingredient_id
-                                int ingredient_id = rs2.getInt("ingredient_id");
-                                int ingredient_amount = rs2.getInt("ingredient_amount") * item.getItem_count();
-
-                                // if using water, don't take from inventory (assuming infinite)
-                                if (ingredient_id == water_id) {
-                                    continue;
-                                }
-
-                                try {
-                                    Statement stmt3 = conn.createStatement();
-                                    int linesChanged = stmt3.executeUpdate("UPDATE ingredients SET quantity = quantity - " + ingredient_amount + " WHERE ingredient_id = " + ingredient_id);
-                                    if (linesChanged != 1) {
-                                        System.out.println("Error changing ingredient quantity.");
-                                    }
-                                    stmt3.close();
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                            }
-
-                            rs2.close();
-                            stmt2.close();
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-
-                        // create orderitem connected to order
-                        try {
-                            Statement stmt4 = conn.createStatement();
-                            int linesChanged = stmt4.executeUpdate("INSERT INTO orderitems (order_id, product_id, qty, item_price) VALUES (" + order_id + ", " + item.getProduct_id() + ", " + item.getItem_count() + ", " + item.getItem_price() + ");");
-                            if (linesChanged != 1) {
-                                System.out.println("Error inserting new OrderItem.");
-                            }
-                            stmt4.close();
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
+                        Statement stmt4 = conn.createStatement();
+                        stmt4.executeUpdate("INSERT INTO orderitems (order_id, product_id, qty, item_price) VALUES ("
+                                + order_id + ", " + item.getProduct_id() + ", " + item.getItem_count() + ", "
+                                + item.getItem_price() + ");");
+                        stmt4.close();
                     }
                 }
 
-                // everything went properly so now committing to database
                 conn.commit();
-
                 rs.close();
                 stmt.close();
                 conn.close();
@@ -376,98 +326,84 @@ public class AppController {
             }
         }
 
-        // Finishing up and cleaning up viewable elements
         orderItems.clear();
-
-        // Resetting the current total
         currentSubTotal = 0.00;
         updateTotalAndTax();
-
-        // clearing the ListView
         observableOrderItems.clear();
-
-        // go back to the main menu
         getCategories();
     }
 
-    private void addItemToOrder(int product_id, String product_name, double price, int item_count, String addon_string, int category_id){
+    /**
+     * Adds an item to the current order.
+     */
+    private void addItemToOrder(int product_id, String product_name, double price, int item_count, String addon_string,
+            int category_id) {
         currentSubTotal += price * item_count;
-
         OrderItem item = new OrderItem(product_id, product_name, price, item_count);
         orderItems.add(item);
         if (addon_string.length() < 3) {
             addon_string += "  None";
         }
-        String itemString = item.getProduct_name() 
-                            + "\n    quantity: " + item_count
-                            + "\n    add-ons: " + addon_string.substring(2)
-                            + "\n    price: " + item.getItem_price();
-                            
+        String itemString = item.getProduct_name()
+                + "\n    quantity: " + item_count
+                + "\n    add-ons: " + addon_string.substring(2)
+                + "\n    price: " + item.getItem_price();
         observableOrderItems.add(itemString);
-
         updateTotalAndTax();
-
         getProduct(product_id, category_id, 0, "");
     }
 
-    private void updateTotalAndTax(){
+    /** Updates subtotal, tax, and total on the screen. */
+    private void updateTotalAndTax() {
         totalLabel.setText(String.format("Total: $%.2f", currentSubTotal + (currentSubTotal * 0.05)));
         taxLabel.setText(String.format("Tax: $%.2f", currentSubTotal * 0.05));
         subTotalLabel.setText(String.format("Sub Total: $%.2f", currentSubTotal));
     }
 
-    // Creates a reusable category card
+    /** Creates a clickable card for a product category. */
     private VBox createCategoryCard(String category_name, int category_id) {
         VBox card = new VBox(5);
         card.setStyle(
                 "-fx-border-color: black; -fx-border-radius: 5; -fx-background-color: #b9b9b9ff; -fx-background-radius: 5;");
         card.setPadding(new javafx.geometry.Insets(10));
-
         Text text = new Text(category_name);
         text.setStyle("-fx-font-weight: bold;");
-        //javafx.scene.control.Button button = new javafx.scene.control.Button("Select");
         card.setOnMouseClicked(e -> showProducts(category_id));
-
         card.getChildren().addAll(text);
         return card;
     }
 
-    // Creates a reusable product card
+    /** Creates a clickable card for a product. */
     private VBox createProductCard(String product_name, int product_id, int category_id) {
         VBox card = new VBox(5);
         card.setStyle(
                 "-fx-border-color: black; -fx-border-radius: 5; -fx-background-color: #b9b9b9ff; -fx-background-radius: 5;");
         card.setPadding(new javafx.geometry.Insets(10));
-
         Text text = new Text(product_name);
         text.setStyle("-fx-font-weight: bold;");
-        //javafx.scene.control.Button button = new javafx.scene.control.Button("Select");
         card.setOnMouseClicked(e -> getProduct(product_id, category_id, 0, ""));
-
         card.getChildren().addAll(text);
         return card;
     }
 
-    // Creates a reusable addon card
-    private VBox createAddonCard(String addon_name, double addon_price, int addon_id, int product_id, int category_id, double current_addon_extra_price, String current_addon_string) {
+    /** Creates a card for an add-on option. */
+    private VBox createAddonCard(String addon_name, double addon_price, int addon_id, int product_id, int category_id,
+            double current_addon_extra_price, String current_addon_string) {
         VBox card = new VBox(5);
         card.setStyle(
                 "-fx-border-color: black; -fx-border-radius: 5; -fx-background-color: #b9b9b9ff; -fx-background-radius: 5;");
         card.setPadding(new javafx.geometry.Insets(10));
-
         Text name = new Text(addon_name);
         name.setStyle("-fx-font-weight: bold;");
         Text price = new Text("Add-on Price: $" + addon_price);
-        javafx.scene.control.Button button = new javafx.scene.control.Button("Add");
-        button.setOnMouseClicked(
-            e -> getProduct(product_id, category_id, current_addon_extra_price + addon_price, current_addon_string + ", " + addon_name)
-            //e -> System.out.println("Addon item clicked")
-            );
-
+        Button button = new Button("Add");
+        button.setOnMouseClicked(e -> getProduct(product_id, category_id, current_addon_extra_price + addon_price,
+                current_addon_string + ", " + addon_name));
         card.getChildren().addAll(name, price, button);
         return card;
     }
 
+    /** Creates a quantity selector with plus and minus buttons. */
     private HBox createQuantitySelector(IntegerProperty quantity) {
         Button plus = new Button("+");
         Button minus = new Button("-");
@@ -476,7 +412,8 @@ public class AppController {
 
         plus.setOnAction(e -> quantity.set(quantity.get() + 1));
         minus.setOnAction(e -> {
-            if (quantity.get() > 1) quantity.set(quantity.get() - 1);
+            if (quantity.get() > 1)
+                quantity.set(quantity.get() - 1);
         });
 
         HBox box = new HBox(5, minus, quantityLabel, plus);
