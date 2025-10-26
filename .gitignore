@@ -1,6 +1,0 @@
-*.csv
-a.out
-target/
-.vscode/
-*.class
-.env
